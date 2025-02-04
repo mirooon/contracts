@@ -1,16 +1,12 @@
 name: Olympix Integrated Security Workflow
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '**/*.sol'
-      - '.github/workflows/olympixAction.yml'
   pull_request:
+    types:
+      - ready_for_review
     paths:
       - '**/*.sol'
-      - '.github/workflows/olympixAction.yml'
+      - '.github/workflows/olympixStaticAnalysis.yml'
 
 jobs:
   security:
@@ -49,3 +45,23 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: olympix.sarif
+
+  enforce-dismiss-comment:
+    needs: security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Dismissed Security Alerts
+        run: |
+          ALERTS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?state=dismissed")
+          
+          MISSING_COMMENTS=$(echo $ALERTS | jq '[.[] | select(.dismissed_by != null and .dismissed_comment == null)] | length')
+
+          if [ "$MISSING_COMMENTS" -gt 0 ]; then
+            echo "Some security alerts were dismissed without comments! Please provide a reason before dismissing."
+            exit 1
+          else
+            echo "All dismissed alerts have comments. ✅"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
