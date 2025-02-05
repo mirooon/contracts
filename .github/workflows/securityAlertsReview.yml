@@ -1,4 +1,4 @@
-name: Enforce Dismissal Comments on Security Alerts
+name: Security Alerts Review
 
 on:
   push:
@@ -57,6 +57,9 @@ jobs:
           echo "UNRESOLVED_COUNT=$UNRESOLVED_COUNT" >> $GITHUB_ENV
           echo "DISMISSED_COUNT=$DISMISSED_COUNT" >> $GITHUB_ENV
 
+          echo "UNRESOLVED_ALERTS"
+          echo $UNRESOLVED_ALERTS
+
           echo "UNRESOLVED_ALERTS<<EOF" >> $GITHUB_ENV
           echo "$UNRESOLVED_ALERTS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -92,6 +95,9 @@ jobs:
           if [[ "$UNRESOLVED_COUNT" -gt 0 ]]; then
             COMMENT_BODY+="🚨 **Unresolved Security Alerts Found!** 🚨\n"
             COMMENT_BODY+="The following security alerts must be **resolved** before merging:\n\n"
+
+            echo "UNRESOLVED_ALERTS"
+            echo $UNRESOLVED_ALERTS
 
             echo "$UNRESOLVED_ALERTS" | jq -c '.[]' | while read -r alert; do
               ALERT_URL=$(echo "$alert" | jq -r '.html_url')
