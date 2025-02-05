@@ -82,14 +82,14 @@ jobs:
           if [[ "$MISSING_ALERTS_COUNT" -gt 0 ]]; then
             COMMENT_BODY="❌ **Some security alerts were dismissed without comments!**\n\n"
             COMMENT_BODY+="The following alerts were dismissed without an explanation:\n"
-
+       
             echo "$MISSING_ALERTS" | jq -c '.[]' | while read -r alert; do
               ALERT_URL=$(echo "$alert" | jq -r '.html_url')
               COMMENT_BODY+="🔹 [View Alert]($ALERT_URL)\n"
             done
-
+       
             COMMENT_BODY+="\n⚠️ Please provide a reason before dismissing security alerts."
-
+       
             # Update existing comment if found
             if [[ -n "$EXISTING_COMMENT_ID" ]]; then
               echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
