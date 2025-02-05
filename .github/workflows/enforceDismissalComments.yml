@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - '**/*.sol'
-      - '.github/workflows/enforce-dismissal-comments.yml'
+      - '.github/workflows/enforceDismissalComments.yml'
   issue_comment:
     types:
       - created
