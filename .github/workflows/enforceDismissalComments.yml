@@ -57,7 +57,7 @@ jobs:
           echo "Fetching dismissed security alerts..."
 
           ALERTS=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?state=dismissed")
+            "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?pr={$PR_NUMBER}")
 
           echo "Raw API Response:"
           echo "$ALERTS"
