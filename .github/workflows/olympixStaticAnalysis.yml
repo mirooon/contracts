@@ -1,25 +1,25 @@
-name: Olympix Integrated Security Workflow
+name: Olympix Statis Analysis
 
 on:
   pull_request:
-    types:
-      - ready_for_review
+    types: [ready_for_review]
     paths:
       - '**/*.sol'
       - '.github/workflows/olympixStaticAnalysis.yml'
 
 jobs:
-  security:
+  static-analysis:
+    name: Static Analysis Security Check
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Get Changed Files
+      - name: Get Changed Solidity Files
         id: changed-files
         uses: tj-actions/changed-files@v45
-        with: 
+        with:
           files: |
             **/*.sol
 
