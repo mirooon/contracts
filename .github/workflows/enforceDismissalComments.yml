@@ -23,7 +23,11 @@ jobs:
           ALERTS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?state=dismissed")
 
+          echo $ALERTS
+
           MISSING_COMMENTS=$(echo $ALERTS | jq '[.[] | select(.dismissed_by != null and .dismissed_comment == null)] | length')
+
+          echo $MISSING_COMMENTS
 
           if [ "$MISSING_COMMENTS" -gt 0 ]; then
             echo "❌ Some security alerts were dismissed without comments! Please provide a reason before dismissing."
