@@ -41,32 +41,33 @@ jobs:
         run: |
           echo "Fetching security alerts for PR #${PR_NUMBER}..."
           
+          # Fetch security alerts via GitHub API
           ALERTS=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?pr=${PR_NUMBER}")
 
+          # Log raw API response for debugging
           echo "Raw API Response:"
           echo "$ALERTS"
 
-          # Separate alerts based on their state
-          UNRESOLVED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "open")]')
-          DISMISSED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment == null or .dismissed_comment == ""))]')
+          # Ensure valid JSON parsing; default to empty array if parsing fails
+          UNRESOLVED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "open") ]' || echo "[]")
+          DISMISSED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment == null or .dismissed_comment == ""))]' || echo "[]")
 
           UNRESOLVED_COUNT=$(echo "$UNRESOLVED_ALERTS" | jq -r 'length')
           DISMISSED_COUNT=$(echo "$DISMISSED_ALERTS" | jq -r 'length')
 
+          # Output for debugging
+          echo "UNRESOLVED_ALERTS: $UNRESOLVED_ALERTS"
+          echo "DISMISSED_ALERTS: $DISMISSED_ALERTS"
+          echo "UNRESOLVED_COUNT: $UNRESOLVED_COUNT"
+          echo "DISMISSED_COUNT: $DISMISSED_COUNT"
+
+          # Save them properly in the environment as single-line JSON
+          echo "UNRESOLVED_ALERTS=$UNRESOLVED_ALERTS" >> $GITHUB_ENV
+          echo "DISMISSED_ALERTS=$DISMISSED_ALERTS" >> $GITHUB_ENV
           echo "UNRESOLVED_COUNT=$UNRESOLVED_COUNT" >> $GITHUB_ENV
           echo "DISMISSED_COUNT=$DISMISSED_COUNT" >> $GITHUB_ENV
 
-          echo "UNRESOLVED_ALERTS"
-          echo $UNRESOLVED_ALERTS
-
-          echo "UNRESOLVED_ALERTS<<EOF" >> $GITHUB_ENV
-          echo "$UNRESOLVED_ALERTS" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-          echo "DISMISSED_ALERTS<<EOF" >> $GITHUB_ENV
-          echo "$DISMISSED_ALERTS" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
 
       - name: Find Existing PR Comment
         id: find_comment
@@ -103,11 +104,10 @@ jobs:
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
               ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
-            
+
               COMMENT_BODY+="🔴 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
             done
-
 
             COMMENT_BODY+="\n⚠️ **Please resolve these alerts before merging.**\n\n"
           fi
