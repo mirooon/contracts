@@ -1,10 +1,10 @@
+---
 name: Enforce Dismissal Comments on Security Alerts
-
 on:
   push:
     paths:
-      - '**/*.sol'
-      - '.github/workflows/enforceDismissalComments.yml'
+      - "**/*.sol"
+      - .github/workflows/enforceDismissalComments.yml
   issue_comment:
     types:
       - created
@@ -12,28 +12,33 @@ on:
   pull_request:
     types:
       - ready_for_review
-
 jobs:
   check-dismissed-alerts:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Log Event Type
-        run: echo "Triggered by event: ${{ github.event_name }}"
-
       - name: Fetch Dismissed Security Alerts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
+        run: >
           echo "Fetching dismissed security alerts..."
-          ALERTS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?state=dismissed")
+
+
+          # Fetch dismissed alerts using GitHub API
+
+          ALERTS=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?state=dismissed")
+
+          # Log API response for debugging
 
           echo "Raw API Response:"
+
           echo "$ALERTS"
 
-          # Find alerts dismissed WITHOUT comments
-          MISSING_COMMENTS=$(echo "$ALERTS" | jq '[.[] | select(.dismissed_by != null and .dismissed_comment == null)] | length')
+
+          # Check if any dismissed alert is missing a comment
+
+          MISSING_COMMENTS=$(echo "$ALERTS" | jq '[.[] | select(.dismissed_by != null and (.dismissed_comment == null or .dismissed_comment == ""))] | length')
+
 
           if [ "$MISSING_COMMENTS" -gt 0 ]; then
             echo "❌ Some security alerts were dismissed without comments! Please provide a reason before dismissing."
