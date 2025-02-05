@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "**/*.sol"
-      - ".github/workflows/enforceDismissalComments.yml"
+      - ".github/workflows/securityAlertsReview.yml"
   issue_comment:
     types:
       - created
@@ -100,8 +100,6 @@ jobs:
             done
 
             COMMENT_BODY+="\n⚠️ **Please resolve these alerts before merging.**\n\n"
-          else
-            COMMENT_BODY+="✅ **No unresolved security alerts!** 🎉\n\n"
           fi
 
           # Add Dismissed Alerts Without Comments
@@ -116,8 +114,11 @@ jobs:
             done
 
             COMMENT_BODY+="\n⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
-          else
-            COMMENT_BODY+="✅ **All dismissed alerts have comments!** 🎉\n\n"
+          fi
+
+          # If no unresolved or dismissed alerts without comments, add success message
+          if [[ "$UNRESOLVED_COUNT" -eq 0 && "$DISMISSED_COUNT" -eq 0 ]]; then
+            COMMENT_BODY+="✅ **No unresolved security alerts!** 🎉\n\n"
           fi
 
           # Update existing comment if found
