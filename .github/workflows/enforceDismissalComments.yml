@@ -43,6 +43,7 @@ jobs:
             MISSING_ALERTS_COUNT=$(echo "$MISSING_ALERTS" | jq -r 'length')
           fi
 
+          echo "MISSING_ALERTS=$MISSING_ALERTS" >> $GITHUB_ENV
           echo "MISSING_ALERTS_COUNT=$MISSING_ALERTS_COUNT" >> $GITHUB_ENV
 
       - name: Find Existing PR Comment
@@ -81,6 +82,7 @@ jobs:
             COMMENT_BODY+="🚨 **Some security alerts were dismissed without comments!**\n\n"
             COMMENT_BODY+="The following security alerts were dismissed **without a comment**:\n"
 
+            echo "MISSING_ALERTS"
             echo $MISSING_ALERTS
 
             echo "$MISSING_ALERTS" | jq -c '.[]' | while read -r alert; do
