@@ -47,7 +47,7 @@ jobs:
 
           echo "Changed Files JSON Array: $CHANGED_FILES"
 
-          # Store it as a single-line string in the environment
+          # Save it correctly as a single-line JSON array
           echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
 
       - name: Fetch Dismissed Security Alerts
@@ -62,10 +62,15 @@ jobs:
           echo "Raw API Response:"
           echo "$ALERTS"
 
+          # Ensure CHANGED_FILES is properly read as JSON
+          CHANGED_FILES_JSON=$(echo "$CHANGED_FILES" | jq -c .)
+
+          echo "CHANGED_FILES_JSON: $CHANGED_FILES_JSON"
+
           # Filter alerts to match changed files
-          FILTERED_ALERTS=$(echo "$ALERTS" | jq --argjson files "$CHANGED_FILES" '
+          FILTERED_ALERTS=$(echo "$ALERTS" | jq --argjson files "$CHANGED_FILES_JSON" '
             [ .[] | select(.dismissed_by != null and (.dismissed_comment == null or .dismissed_comment == ""))
-              | select(.most_recent_instance.location.filePath as $path | $files | contains($path)) ]')
+              | select(.most_recent_instance.location.path as $path | index($files[])) ]')
 
           if [[ -z "$FILTERED_ALERTS" || "$FILTERED_ALERTS" == "[]" ]]; then
             echo "✅ No relevant dismissed alerts found."
@@ -78,6 +83,7 @@ jobs:
           echo "FILTERED_ALERTS<<EOF" >> $GITHUB_ENV
           echo "$FILTERED_ALERTS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+
 
       - name: Find Existing PR Comment
         id: find_comment
