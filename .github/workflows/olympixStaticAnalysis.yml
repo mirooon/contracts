@@ -2,7 +2,7 @@ name: Olympix Statis Analysis
 
 on:
   pull_request:
-    types: [ready_for_review]
+    types: [push]
     paths:
       - '**/*.sol'
       - '.github/workflows/olympixStaticAnalysis.yml'
