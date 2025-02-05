@@ -60,6 +60,8 @@ jobs:
             exit 0
           fi
 
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+
           COMMENT_ID=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" | jq -r \
             '.[] | select(.body | startswith("### 🤖 GitHub Action: Enforce Dismissal Comments")) | .id')
