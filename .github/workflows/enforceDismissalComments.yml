@@ -1,10 +1,13 @@
-name: Enforce Dismissal Comments on Issue Comments
+name: Enforce Dismissal Comments on Security Alerts
 
 on:
   issue_comment:
     types:
       - created
       - edited
+  pull_request:
+    types:
+      - ready_for_review
 
 jobs:
   check-dismissed-alerts:
