@@ -86,6 +86,7 @@ jobs:
             COMMENT_BODY="❌ **Some security alerts were dismissed without comments!**\n\n"
             COMMENT_BODY+="The following alerts were dismissed without an explanation:\n"
        
+            echo $MISSING_ALERTS
             echo "$MISSING_ALERTS" | jq -c '.[]' | while read -r alert; do
               ALERT_URL=$(echo "$alert" | jq -r '.html_url')
               COMMENT_BODY+="🔹 [View Alert]($ALERT_URL)\n"
