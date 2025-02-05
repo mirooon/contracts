@@ -12,6 +12,7 @@ on:
   pull_request:
     types:
       - ready_for_review
+  workflow_dispatch: null
 jobs:
   check-dismissed-alerts:
     runs-on: ubuntu-latest
@@ -37,12 +38,42 @@ jobs:
 
           # Check if any dismissed alert is missing a comment
 
-          MISSING_COMMENTS=$(echo "$ALERTS" | jq '[.[] | select(.dismissed_by != null and (.dismissed_comment == null or .dismissed_comment == ""))] | length')
+          MISSING_ALERTS=$(echo "$ALERTS" | jq -r '.[] | select(.dismissed_by != null and (.dismissed_comment == null or .dismissed_comment == "")) | .number')
 
 
-          if [ "$MISSING_COMMENTS" -gt 0 ]; then
+          if [[ -n "$MISSING_ALERTS" ]]; then
             echo "❌ Some security alerts were dismissed without comments! Please provide a reason before dismissing."
             exit 1
           else
             echo "✅ All dismissed alerts have comments."
           fi
+      - name: Post Dismissal Comments to PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          echo "Posting dismissal comments to the PR..."
+
+
+          # Get PR number
+
+          PR_NUMBER=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?state=open" | jq -r '.[0].number')
+
+          if [[ -z "$PR_NUMBER" || "$PR_NUMBER" == "null" ]]; then
+            echo "No open PR found, skipping comment posting."
+            exit 0
+          fi
+
+
+          # Loop through dismissed alerts and post each comment
+
+          echo "$ALERTS" | jq -c '.[] | select(.dismissed_by != null and .dismissed_comment != null and .dismissed_comment != "")' | while read -r alert; do
+            COMMENT=$(echo "$alert" | jq -r '.dismissed_comment')
+            ALERT_URL=$(echo "$alert" | jq -r '.html_url')
+
+            echo "Posting comment for dismissed alert: $ALERT_URL"
+
+            curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
+              -d "{\"body\": \"🛑 **Security Alert Dismissed**\n\nDismissal Reason: $COMMENT\n[View Alert]($ALERT_URL)\"}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
+          done
