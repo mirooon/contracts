@@ -98,16 +98,16 @@ jobs:
             COMMENT_BODY+="The following security alerts must be **resolved** before merging:\n\n"
 
             echo "UNRESOLVED_ALERTS"
-            echo $UNRESOLVED_ALERTS
+            echo "$UNRESOLVED_ALERTS"
 
-            for row in $(echo "$UNRESOLVED_ALERTS" | jq -c '.[]'); do
+            while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
               ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
 
               COMMENT_BODY+="🔴 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
-            done
+            done < <(echo "$UNRESOLVED_ALERTS" | jq -c '.[]')
 
             COMMENT_BODY+="\n⚠️ **Please resolve these alerts before merging.**\n\n"
           fi
