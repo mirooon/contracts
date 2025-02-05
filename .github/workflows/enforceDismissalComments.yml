@@ -15,7 +15,7 @@ on:
   workflow_dispatch:  # ✅ Allows manual re-run from GitHub UI
 
 jobs:
-  check-dismissed-alerts:
+  check-security-alerts:
     runs-on: ubuntu-latest
 
     steps:
@@ -35,55 +35,35 @@ jobs:
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
           echo "PR number: $PR_NUMBER"
 
-      - name: Fetch Changed Files in PR
+      - name: Fetch Security Alerts for PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Fetching changed files in PR #${PR_NUMBER}..."
+          echo "Fetching security alerts for PR #${PR_NUMBER}..."
           
-          # Fetch list of changed files and format them as a JSON array
-          CHANGED_FILES=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" | jq -c '[.[].filename]')
-
-          echo "Changed Files JSON Array: $CHANGED_FILES"
-
-          # Save it correctly as a single-line JSON array
-          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
-
-      - name: Fetch Dismissed Security Alerts
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Fetching dismissed security alerts..."
-
           ALERTS=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?pr={$PR_NUMBER}")
+            "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?pr=${PR_NUMBER}")
 
           echo "Raw API Response:"
           echo "$ALERTS"
 
-          # Ensure CHANGED_FILES is properly read as JSON
-          CHANGED_FILES_JSON=$(echo "$CHANGED_FILES" | jq -c .)
+          # Separate alerts based on their state
+          UNRESOLVED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "open")]')
+          DISMISSED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment == null or .dismissed_comment == ""))]')
 
-          echo "CHANGED_FILES_JSON: $CHANGED_FILES_JSON"
+          UNRESOLVED_COUNT=$(echo "$UNRESOLVED_ALERTS" | jq -r 'length')
+          DISMISSED_COUNT=$(echo "$DISMISSED_ALERTS" | jq -r 'length')
 
-          # Filter alerts to match changed files
-          FILTERED_ALERTS=$(echo "$ALERTS" | jq --argjson files "$CHANGED_FILES_JSON" '
-            [ .[] | select(.dismissed_by != null and (.dismissed_comment == null or .dismissed_comment == ""))
-              | select(.most_recent_instance.location.path as $path | index($files[])) ]')
+          echo "UNRESOLVED_COUNT=$UNRESOLVED_COUNT" >> $GITHUB_ENV
+          echo "DISMISSED_COUNT=$DISMISSED_COUNT" >> $GITHUB_ENV
 
-          if [[ -z "$FILTERED_ALERTS" || "$FILTERED_ALERTS" == "[]" ]]; then
-            echo "✅ No relevant dismissed alerts found."
-            FILTERED_ALERTS_COUNT=0
-          else
-            FILTERED_ALERTS_COUNT=$(echo "$FILTERED_ALERTS" | jq -r 'length')
-          fi
-
-          echo "FILTERED_ALERTS_COUNT=$FILTERED_ALERTS_COUNT" >> $GITHUB_ENV
-          echo "FILTERED_ALERTS<<EOF" >> $GITHUB_ENV
-          echo "$FILTERED_ALERTS" >> $GITHUB_ENV
+          echo "UNRESOLVED_ALERTS<<EOF" >> $GITHUB_ENV
+          echo "$UNRESOLVED_ALERTS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
+          echo "DISMISSED_ALERTS<<EOF" >> $GITHUB_ENV
+          echo "$DISMISSED_ALERTS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Find Existing PR Comment
         id: find_comment
@@ -94,7 +74,7 @@ jobs:
           
           COMMENT_ID=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" | jq -r \
-            '.[] | select(.body | startswith("### 🤖 GitHub Action: Enforce Dismissal Comments")) | .id')
+            '.[] | select(.body | startswith("### 🤖 GitHub Action: Security Alerts Review")) | .id')
 
           if [[ -n "$COMMENT_ID" && "$COMMENT_ID" != "null" ]]; then
             echo "EXISTING_COMMENT_ID=$COMMENT_ID" >> $GITHUB_ENV
@@ -106,40 +86,49 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ "$FILTERED_ALERTS_COUNT" -gt 0 ]]; then
-            COMMENT_BODY="### 🤖 GitHub Action: Enforce Dismissal Comments ❌\n\n"
-            COMMENT_BODY+="🚨 **Some security alerts related to this PR were dismissed without comments!**\n\n"
-            COMMENT_BODY+="The following security alerts were dismissed **without a comment**:\n"
+          COMMENT_BODY="### 🤖 GitHub Action: Security Alerts Review 🔍\n\n"
 
-            echo "$FILTERED_ALERTS" | jq -c '.[]' | while read -r alert; do
+          # Add Unresolved Alerts
+          if [[ "$UNRESOLVED_COUNT" -gt 0 ]]; then
+            COMMENT_BODY+="🚨 **Unresolved Security Alerts Found!** 🚨\n"
+            COMMENT_BODY+="The following security alerts must be **resolved** before merging:\n\n"
+
+            echo "$UNRESOLVED_ALERTS" | jq -c '.[]' | while read -r alert; do
               ALERT_URL=$(echo "$alert" | jq -r '.html_url')
-              ALERT_FILE=$(echo "$alert" | jq -r '.most_recent_instance.location.filePath')
-              COMMENT_BODY+="🔹 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
+              ALERT_FILE=$(echo "$alert" | jq -r '.most_recent_instance.location.path')
+              COMMENT_BODY+="🔴 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
             done
 
-            COMMENT_BODY+="\n⚠️ **Please provide a reason before dismissing security alerts.**"
-
-            # Update existing comment if found
-            if [[ -n "$EXISTING_COMMENT_ID" ]]; then
-              echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
-              curl -s -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-                -d "{\"body\": \"$COMMENT_BODY\"}" \
-                "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
-            else
-              echo "Posting new comment to PR..."
-              curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-                -d "{\"body\": \"$COMMENT_BODY\"}" \
-                "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
-            fi
+            COMMENT_BODY+="\n⚠️ **Please resolve these alerts before merging.**\n\n"
           else
-            if [[ -n "$EXISTING_COMMENT_ID" ]]; then
-              echo "All relevant alerts now have comments. Updating status to ✅."
-              COMMENT_BODY="### 🤖 GitHub Action: Enforce Dismissal Comments ✅\n\n"
-              COMMENT_BODY+="✅ **All security alerts related to this PR now have comments!**\n\n"
-              COMMENT_BODY+="🛡️ Your repository is compliant with security best practices. Keep up the good work! 🎉"
+            COMMENT_BODY+="✅ **No unresolved security alerts!** 🎉\n\n"
+          fi
 
-              curl -s -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-                -d "{\"body\": \"$COMMENT_BODY\"}" \
-                "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
-            fi
+          # Add Dismissed Alerts Without Comments
+          if [[ "$DISMISSED_COUNT" -gt 0 ]]; then
+            COMMENT_BODY+="❌ **Some security alerts were dismissed without comments!** ❌\n"
+            COMMENT_BODY+="The following alerts were dismissed but require a reason:\n\n"
+
+            echo "$DISMISSED_ALERTS" | jq -c '.[]' | while read -r alert; do
+              ALERT_URL=$(echo "$alert" | jq -r '.html_url')
+              ALERT_FILE=$(echo "$alert" | jq -r '.most_recent_instance.location.path')
+              COMMENT_BODY+="⚠️ [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
+            done
+
+            COMMENT_BODY+="\n⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
+          else
+            COMMENT_BODY+="✅ **All dismissed alerts have comments!** 🎉\n\n"
+          fi
+
+          # Update existing comment if found
+          if [[ -n "$EXISTING_COMMENT_ID" ]]; then
+            echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
+            curl -s -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
+              -d "{\"body\": \"$COMMENT_BODY\"}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
+          else
+            echo "Posting new comment to PR..."
+            curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
+              -d "{\"body\": \"$COMMENT_BODY\"}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
