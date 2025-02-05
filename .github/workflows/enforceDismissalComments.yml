@@ -12,13 +12,31 @@ on:
   pull_request:
     types:
       - ready_for_review
-  workflow_dispatch:  # ✅ Allows manual re-run from GitHub UI
+  workflow_dispatch:
 
 jobs:
   check-dismissed-alerts:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Find PR Number
+        id: get_pr_number
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching PR number associated with this branch..."
+          
+          PR_NUMBER=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?state=open" | \
+            jq -r '.[] | select(.head.ref == "'"${GITHUB_REF#refs/heads/}"'") | .number')
+
+          if [[ -z "$PR_NUMBER" || "$PR_NUMBER" == "null" ]]; then
+            echo "No open PR found for this branch."
+            exit 0
+          fi
+
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          echo "Found PR Number: $PR_NUMBER"
 
       - name: Fetch Dismissed Security Alerts
         env:
@@ -30,90 +48,37 @@ jobs:
           ALERTS=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?state=dismissed")
 
-          # Log API response for debugging
           echo "Raw API Response:"
-          # echo "$ALERTS"
+          echo "$ALERTS"
 
-          echo "here"
           # Extract dismissed alerts without comments
           MISSING_ALERTS=$(echo "$ALERTS" | jq -r '[.[] | select(.dismissed_by != null and (.dismissed_comment == null or .dismissed_comment == ""))]')
 
-          echo "here2"
           if [[ -z "$MISSING_ALERTS" || "$MISSING_ALERTS" == "[]" ]]; then
             echo "✅ All dismissed alerts have comments."
-            MISSING_ALERTS_COUNT=0
+            echo "MISSING_ALERTS_COUNT=0" >> $GITHUB_ENV
           else
-            MISSING_ALERTS_COUNT=$(echo "$MISSING_ALERTS" | jq -r 'length')
+            echo "MISSING_ALERTS_COUNT=$(echo "$MISSING_ALERTS" | jq -r 'length')" >> $GITHUB_ENV
           fi
-          echo "here3"
-          echo $MISSING_ALERTS_COUNT
-
-          echo "MISSING_ALERTS_COUNT=$MISSING_ALERTS_COUNT" >> $GITHUB_ENV
-
-      - name: Find Existing PR Comment
-        id: find_comment
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Searching for existing PR comment..."
-          
-          PR_NUMBER=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls?state=open" | jq -r '.[0].number')
-
-          if [[ -z "$PR_NUMBER" || "$PR_NUMBER" == "null" ]]; then
-            echo "No open PR found, skipping comment posting."
-            exit 0
-          fi
-
-          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
-          echo "Found PR Number: $PR_NUMBER"
-
-          COMMENT_ID=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" | jq -r \
-            '.[] | select(.body | contains("❌ Some security alerts were dismissed without comments")) | .id')
-
-          if [[ -n "$COMMENT_ID" && "$COMMENT_ID" != "null" ]]; then
-            echo "EXISTING_COMMENT_ID=$COMMENT_ID" >> $GITHUB_ENV
-          fi
-
-          echo "Found comment ID: $COMMENT_ID"
 
       - name: Post or Update PR Comment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ env.PR_NUMBER }}  # ✅ This ensures PR_NUMBER is passed to this step
         run: |
           if [[ "$MISSING_ALERTS_COUNT" -gt 0 ]]; then
             COMMENT_BODY="❌ **Some security alerts were dismissed without comments!**\n\n"
             COMMENT_BODY+="The following alerts were dismissed without an explanation:\n"
-       
-            echo $MISSING_ALERTS
+
             echo "$MISSING_ALERTS" | jq -c '.[]' | while read -r alert; do
               ALERT_URL=$(echo "$alert" | jq -r '.html_url')
               COMMENT_BODY+="🔹 [View Alert]($ALERT_URL)\n"
             done
-       
+
             COMMENT_BODY+="\n⚠️ Please provide a reason before dismissing security alerts."
-       
-            # Update existing comment if found
-            if [[ -n "$EXISTING_COMMENT_ID" ]]; then
-              echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
-              curl -s -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-                -d "{\"body\": \"$COMMENT_BODY\"}" \
-                "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
-            else
-              echo "Posting new comment to PR..."
-              echo ${{ github.repository }}
-              echo "${PR_NUMBER}"
-              echo $PR_NUMBER
-              echo "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
-              curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-                -d "{\"body\": \"$COMMENT_BODY\"}" \
-                "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
-            fi
-          else
-            if [[ -n "$EXISTING_COMMENT_ID" ]]; then
-              echo "All alerts now have comments. Deleting existing comment."
-              curl -s -X DELETE -H "Authorization: token ${GITHUB_TOKEN}" \
-                "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
-            fi
+
+            echo "Posting comment to PR #${PR_NUMBER}..."
+            curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
+              -d "{\"body\": \"$COMMENT_BODY\"}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
