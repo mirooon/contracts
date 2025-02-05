@@ -98,6 +98,9 @@ jobs:
                 "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
             else
               echo "Posting new comment to PR..."
+              echo ${{ github.repository }}
+              echo ${PR_NUMBER}
+              echo "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
               curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
                 -d "{\"body\": \"$COMMENT_BODY\"}" \
                 "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
