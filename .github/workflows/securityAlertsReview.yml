@@ -117,11 +117,17 @@ jobs:
             COMMENT_BODY+="❌ **Some security alerts were dismissed without comments!** ❌\n"
             COMMENT_BODY+="The following alerts were dismissed but require a reason:\n\n"
 
-            echo "$DISMISSED_ALERTS" | jq -c '.[]' | while read -r alert; do
-              ALERT_URL=$(echo "$alert" | jq -r '.html_url')
-              ALERT_FILE=$(echo "$alert" | jq -r '.most_recent_instance.location.path')
+            echo "DISMISSED_ALERTS"
+            echo "$DISMISSED_ALERTS"
+
+            while IFS= read -r row; do
+              ALERT_URL=$(echo "$row" | jq -r '.html_url')
+              ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
+              ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
+
               COMMENT_BODY+="⚠️ [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
-            done
+              COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
+            done < <(echo "$DISMISSED_ALERTS" | jq -c '.[]')
 
             COMMENT_BODY+="\n⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
           fi
