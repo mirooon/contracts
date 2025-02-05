@@ -1,8 +1,16 @@
-name: Olympix Statis Analysis
+name: Olympix Static Analysis
 
 on:
+  push:
+    paths:
+      - '**/*.sol'
+      - '.github/workflows/olympixStaticAnalysis.yml'
   pull_request:
-    types: [push]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
     paths:
       - '**/*.sol'
       - '.github/workflows/olympixStaticAnalysis.yml'
