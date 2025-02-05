@@ -149,3 +149,23 @@ jobs:
               -d "{\"body\": \"$COMMENT_BODY\"}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
+
+      - name: Check if Action Should Fail
+        run: |
+          echo "🔍 Checking if the workflow should fail based on security alerts..."
+
+          # If there are unresolved alerts
+          if [[ "$UNRESOLVED_COUNT" -gt 0 ]]; then
+            echo "❌ ERROR: $UNRESOLVED_COUNT unresolved security alerts found!"
+            echo "⚠️ These alerts must be resolved before merging."
+            exit 1  # Fail the workflow
+          fi
+
+          # If there are dismissed alerts without comments
+          if [[ "$DISMISSED_COUNT" -gt 0 ]]; then
+            echo "❌ ERROR: $DISMISSED_COUNT security alerts were dismissed without comments!"
+            echo "⚠️ Please provide a dismissal reason for these alerts."
+            exit 1  # Fail the workflow
+          fi
+
+          echo "✅ No security issues found. The workflow will pass successfully."
