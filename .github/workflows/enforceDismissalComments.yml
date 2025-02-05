@@ -1,6 +1,10 @@
 name: Enforce Dismissal Comments on Security Alerts
 
 on:
+  push:
+    paths:
+      - '**/*.sol'
+      - '.github/workflows/enforce-dismissal-comments.yml'
   issue_comment:
     types:
       - created
