@@ -99,11 +99,15 @@ jobs:
             echo "UNRESOLVED_ALERTS"
             echo $UNRESOLVED_ALERTS
 
-            echo "$UNRESOLVED_ALERTS" | jq -c '.[]' | while read -r alert; do
-              ALERT_URL=$(echo "$alert" | jq -r '.html_url')
-              ALERT_FILE=$(echo "$alert" | jq -r '.most_recent_instance.location.path')
+            for row in $(echo "$UNRESOLVED_ALERTS" | jq -c '.[]'); do
+              ALERT_URL=$(echo "$row" | jq -r '.html_url')
+              ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
+              ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
+            
               COMMENT_BODY+="🔴 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
+              COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
             done
+
 
             COMMENT_BODY+="\n⚠️ **Please resolve these alerts before merging.**\n\n"
           fi
