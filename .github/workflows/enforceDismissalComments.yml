@@ -31,7 +31,6 @@ jobs:
 
           # Log API response for debugging
           echo "Raw API Response:"
-          echo "$ALERTS"
 
           # Extract dismissed alerts without comments
           MISSING_ALERTS=$(echo "$ALERTS" | jq -r '[.[] | select(.dismissed_by != null and (.dismissed_comment == null or .dismissed_comment == ""))]')
@@ -42,8 +41,10 @@ jobs:
           else
             MISSING_ALERTS_COUNT=$(echo "$MISSING_ALERTS" | jq -r 'length')
           fi
+          echo "MISSING_ALERTS"
+          echo $MISSING_ALERTS
 
-          echo "MISSING_ALERTS=$MISSING_ALERTS" >> $GITHUB_ENV
+          # echo "MISSING_ALERTS=$MISSING_ALERTS" >> $GITHUB_ENV
           echo "MISSING_ALERTS_COUNT=$MISSING_ALERTS_COUNT" >> $GITHUB_ENV
 
       - name: Find Existing PR Comment
