@@ -32,17 +32,21 @@ jobs:
 
           # Log API response for debugging
           echo "Raw API Response:"
-          echo "$ALERTS"
+          # echo "$ALERTS"
 
+          echo "here"
           # Extract dismissed alerts without comments
           MISSING_ALERTS=$(echo "$ALERTS" | jq -r '[.[] | select(.dismissed_by != null and (.dismissed_comment == null or .dismissed_comment == ""))]')
 
+          echo "here2"
           if [[ -z "$MISSING_ALERTS" || "$MISSING_ALERTS" == "[]" ]]; then
             echo "✅ All dismissed alerts have comments."
             MISSING_ALERTS_COUNT=0
           else
             MISSING_ALERTS_COUNT=$(echo "$MISSING_ALERTS" | jq -r 'length')
           fi
+          echo "here3"
+          echo $MISSING_ALERTS_COUNT
 
           echo "MISSING_ALERTS_COUNT=$MISSING_ALERTS_COUNT" >> $GITHUB_ENV
 
