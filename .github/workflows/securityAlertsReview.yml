@@ -13,10 +13,8 @@ on:
     types:
       - ready_for_review
   workflow_dispatch:
-  code_scanning_alert: 
-  types:
-    - dismissed
-    - reopened
+  repository_dispatch:  # ✅ Triggered by external events
+    types: [security_alert_updated]
 
 jobs:
   check-security-alerts:
