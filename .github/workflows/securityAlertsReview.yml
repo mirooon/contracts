@@ -13,7 +13,7 @@ on:
     types:
       - ready_for_review
   workflow_dispatch:
-  repository_dispatch:  # ✅ Triggered by external events
+  repository_dispatch:
     types: [security_alert_updated]
 
 jobs:
