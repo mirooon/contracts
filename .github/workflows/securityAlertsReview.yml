@@ -13,6 +13,22 @@ on:
     types:
       - ready_for_review
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull Request number to review alerts for'
+        required: true
+      unresolved_alerts:
+        description: 'JSON string of unresolved alerts'
+        required: true
+      dismissed_alerts:
+        description: 'JSON string of dismissed alerts'
+        required: true
+      unresolved_count:
+        description: 'Count of unresolved alerts'
+        required: true
+      dismissed_count:
+        description: 'Count of dismissed alerts'
+        required: true
 
 jobs:
   check-security-alerts:
@@ -35,38 +51,12 @@ jobs:
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
           echo "PR number: $PR_NUMBER"
 
-      - name: Fetch Security Alerts for PR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Debug Inputs
         run: |
-          echo "Fetching security alerts for PR #${PR_NUMBER}..."
-          
-          # Fetch security alerts via GitHub API
-          ALERTS=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?pr=${PR_NUMBER}")
-
-          # Log raw API response for debugging
-          echo "Raw API Response:"
-          echo "$ALERTS"
-
-          # Ensure valid JSON parsing; default to empty array if parsing fails
-          UNRESOLVED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "open") ]' || echo "[]")
-          DISMISSED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment == null or .dismissed_comment == ""))]' || echo "[]")
-
-          UNRESOLVED_COUNT=$(echo "$UNRESOLVED_ALERTS" | jq -r 'length')
-          DISMISSED_COUNT=$(echo "$DISMISSED_ALERTS" | jq -r 'length')
-
-          # Output for debugging
-          echo "UNRESOLVED_ALERTS: $UNRESOLVED_ALERTS"
-          echo "DISMISSED_ALERTS: $DISMISSED_ALERTS"
-          echo "UNRESOLVED_COUNT: $UNRESOLVED_COUNT"
-          echo "DISMISSED_COUNT: $DISMISSED_COUNT"
-
-          # Save them properly in the environment as single-line JSON
-          echo "UNRESOLVED_ALERTS=$UNRESOLVED_ALERTS" >> $GITHUB_ENV
-          echo "DISMISSED_ALERTS=$DISMISSED_ALERTS" >> $GITHUB_ENV
-          echo "UNRESOLVED_COUNT=$UNRESOLVED_COUNT" >> $GITHUB_ENV
-          echo "DISMISSED_COUNT=$DISMISSED_COUNT" >> $GITHUB_ENV
+          echo "Unresolved Alerts: ${{ github.event.inputs.unresolved_alerts }}"
+          echo "Dismissed Alerts: ${{ github.event.inputs.dismissed_alerts }}"
+          echo "Unresolved Count: ${{ github.event.inputs.unresolved_count }}"
+          echo "Dismissed Count: ${{ github.event.inputs.dismissed_count }}"
 
 
       - name: Find Existing PR Comment
