@@ -1,0 +1,53 @@
+name: Central Security Alerts Dispatch
+
+on:
+  repository_dispatch:
+    types: [security_alert_updated]
+
+jobs:
+  dispatch-pr-workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List Open Pull Requests
+        id: list_prs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching open PRs..."
+          curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open" > prs.json
+          cat prs.json
+          
+          # Parse out all PR numbers (separated by spaces)
+          pr_numbers=$(jq -r '.[].number' prs.json | tr '\n' ' ')
+          echo "Found PRs: $pr_numbers"
+          echo "::set-output name=pr_numbers::$pr_numbers"
+
+      - name: Trigger Subaction Workflows on PR Branches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pr_numbers="${{ steps.list_prs.outputs.pr_numbers }}"
+          echo "Processing PRs: $pr_numbers"
+          
+          # Loop through each PR number
+          for pr in $pr_numbers; do
+            echo "Processing PR #$pr"
+            
+            # Get the branch name associated with the PR
+            branch=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/$pr" | jq -r '.head.ref')
+            echo "PR branch: $branch"
+            
+            # (Optional) You might add logic here to check for code scanning alerts on this PR.
+            # For now, we always trigger the subaction workflow.
+            
+            # Trigger the subaction workflow via workflow_dispatch.
+            # Note: Replace "securityAlertsReview.yml" with your workflow file name.
+            response=$(curl -s -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/securityAlertsReview.yml/dispatches" \
+              -d "{\"ref\": \"$branch\", \"inputs\": {\"pr_number\": \"$pr\"}}")
+            echo "Triggered subaction for PR #$pr on branch $branch: $response"
+          done
