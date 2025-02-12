@@ -51,12 +51,20 @@ jobs:
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
           echo "PR number: $PR_NUMBER"
 
-      - name: Debug Inputs
+      - name: Assign Inputs to Environment Variables
         run: |
-          echo "Unresolved Alerts: ${{ github.event.inputs.unresolved_alerts }}"
-          echo "Dismissed Alerts: ${{ github.event.inputs.dismissed_alerts }}"
-          echo "Unresolved Count: ${{ github.event.inputs.unresolved_count }}"
-          echo "Dismissed Count: ${{ github.event.inputs.dismissed_count }}"
+          echo "Assigning inputs to environment variables..."
+          echo "UNRESOLVED_ALERTS=${{ github.event.inputs.unresolved_alerts }}" >> $GITHUB_ENV
+          echo "DISMISSED_ALERTS=${{ github.event.inputs.dismissed_alerts }}" >> $GITHUB_ENV
+          echo "UNRESOLVED_COUNT=${{ github.event.inputs.unresolved_count }}" >> $GITHUB_ENV
+          echo "DISMISSED_COUNT=${{ github.event.inputs.dismissed_count }}" >> $GITHUB_ENV
+
+      - name: Debug Assigned Variables
+        run: |
+          echo "UNRESOLVED_ALERTS: $UNRESOLVED_ALERTS"
+          echo "DISMISSED_ALERTS: $DISMISSED_ALERTS"
+          echo "UNRESOLVED_COUNT: $UNRESOLVED_COUNT"
+          echo "DISMISSED_COUNT: $DISMISSED_COUNT"
 
 
       - name: Find Existing PR Comment
