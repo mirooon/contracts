@@ -48,6 +48,6 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: token ${GITHUB_TOKEN}" \
               "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/securityAlertsReview.yml/dispatches" \
-              -d "{\"ref\": \"$branch\", \"inputs\": {\"pr_number\": \"$pr\"}}")
+              -d "{\"ref\": \"$branch\"}")
             echo "Triggered subaction for PR #$pr on branch $branch: $response"
           done
