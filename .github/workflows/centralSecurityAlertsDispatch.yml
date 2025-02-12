@@ -2,7 +2,7 @@ name: Central Security Alerts Dispatch
 
 on:
   repository_dispatch:
-    types: [security_alert_updated]
+    types: [security_alert_updated, code_scanning_alert]
 
 jobs:
   dispatch-pr-workflows:
