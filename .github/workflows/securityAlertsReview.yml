@@ -13,8 +13,6 @@ on:
     types:
       - ready_for_review
   workflow_dispatch:
-  repository_dispatch:  # ✅ Allows execution via Webhook
-    types: [security_alert_updated]
 
 jobs:
   check-security-alerts:
