@@ -64,28 +64,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Build the comment body using $'…' so that \n becomes an actual newline
           COMMENT_BODY=$'### 🤖 GitHub Action: Security Alerts Review 🔍\n'
 
           # Unresolved Alerts
           if [[ "$UNRESOLVED_COUNT" -gt 0 ]]; then
             COMMENT_BODY+=$'\n## 🚨 Unresolved Security Alerts\n'
-            COMMENT_BODY+="These **must be resolved** before merging:\n\n"
+            COMMENT_BODY+=$'These **must be resolved** before merging:\n\n'
             while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
               ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
-              COMMENT_BODY+="🔴 **[View Alert]($ALERT_URL)**\n"
-              COMMENT_BODY+="📌 **File:** \`$ALERT_FILE\`\n"
-              COMMENT_BODY+="💡 **Issue:** $ALERT_DESCRIPTION\n\n"
+              COMMENT_BODY+=$'🔴 **[View Alert]('"$ALERT_URL"')**\n'
+              COMMENT_BODY+=$'📌 **File:** `'"$ALERT_FILE"'`\n'
+              COMMENT_BODY+=$'💡 **Issue:** '"$ALERT_DESCRIPTION"$'\n\n'
             done < <(echo "$UNRESOLVED_ALERTS" | jq -c '.[]')
-            COMMENT_BODY+="⚠️ **Please resolve these alerts before merging.**\n\n"
+            COMMENT_BODY+=$'⚠️ **Please resolve these alerts before merging.**\n\n'
           fi
 
           # Dismissed Alerts With Comments (including DISMISS_REASON)
           if [[ "$DISMISSED_WITH_COMMENTS_COUNT" -gt 0 ]]; then
             COMMENT_BODY+=$'\n## ✅ Dismissed Alerts with Explanations\n'
-            COMMENT_BODY+="The following alerts were dismissed with valid reasons:\n\n"
+            COMMENT_BODY+=$'The following alerts were dismissed with valid reasons:\n\n'
             while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
@@ -94,39 +93,39 @@ jobs:
               DISMISS_COMMENT=$(echo "$row" | jq -r '.dismissed_comment')
               # Capitalize the first letter of the dismissal reason
               FORMATTED_DISMISS_REASON=$(echo "$DISMISS_REASON" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
-              COMMENT_BODY+="🟢 **[View Alert]($ALERT_URL)**\n"
-              COMMENT_BODY+="📌 **File:** \`$ALERT_FILE\`\n"
-              COMMENT_BODY+="💡 **Issue:** $ALERT_DESCRIPTION\n"
-              COMMENT_BODY+="✏️ **Dismissal Reason:** \`$FORMATTED_DISMISS_REASON\`\n"
-              COMMENT_BODY+="💬 **Comment:** \"$DISMISS_COMMENT\"\n\n"
+              COMMENT_BODY+=$'🟢 **[View Alert]('"$ALERT_URL"')**\n'
+              COMMENT_BODY+=$'📌 **File:** `'"$ALERT_FILE"'`\n'
+              COMMENT_BODY+=$'💡 **Issue:** '"$ALERT_DESCRIPTION"$'\n'
+              COMMENT_BODY+=$'✏️ **Dismissal Reason:** `'${FORMATTED_DISMISS_REASON}'`\n'
+              COMMENT_BODY+=$'💬 **Comment:** "'"$DISMISS_COMMENT"'"'\n\n'
             done < <(echo "$DISMISSED_WITH_COMMENTS" | jq -c '.[]')
-            COMMENT_BODY+="✅ **These alerts were reviewed and dismissed correctly.**\n\n"
+            COMMENT_BODY+=$'✅ **These alerts were reviewed and dismissed correctly.**\n\n'
           fi
 
           # Dismissed Alerts Without Comments
           if [[ "$DISMISSED_WITHOUT_COMMENTS_COUNT" -gt 0 ]]; then
             COMMENT_BODY+=$'\n## ⚠️ Dismissed Alerts Without Comments\n'
-            COMMENT_BODY+="The following alerts were dismissed without explanations:\n\n"
+            COMMENT_BODY+=$'The following alerts were dismissed without explanations:\n\n'
             while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
               ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
-              COMMENT_BODY+="⚠️ **[View Alert]($ALERT_URL)**\n"
-              COMMENT_BODY+="📌 **File:** \`$ALERT_FILE\`\n"
-              COMMENT_BODY+="💡 **Issue:** $ALERT_DESCRIPTION\n\n"
+              COMMENT_BODY+=$'⚠️ **[View Alert]('"$ALERT_URL"')**\n'
+              COMMENT_BODY+=$'📌 **File:** `'"$ALERT_FILE"'`\n'
+              COMMENT_BODY+=$'💡 **Issue:** '"$ALERT_DESCRIPTION"$'\n\n'
             done < <(echo "$DISMISSED_WITHOUT_COMMENTS" | jq -c '.[]')
-            COMMENT_BODY+="⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
+            COMMENT_BODY+=$'⚠️ **Please provide a dismissal reason for these alerts.**\n\n'
           fi
 
           echo "COMMENT_BODY:"
           echo "$COMMENT_BODY"
 
-          # Build JSON payload using jq so that newlines are preserved
+          # Build JSON payload so that newlines are preserved.
           COMMENT_BODY_JSON=$(jq -n --arg body "$COMMENT_BODY" '{body: $body}')
           echo "COMMENT_BODY_JSON:"
           echo "$COMMENT_BODY_JSON"
 
-          # Determine API URL (if EXISTING_COMMENT_ID is set, update that comment; otherwise, create new)
+          # Determine API URL (update if EXISTING_COMMENT_ID is set)
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
             API_URL="https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
           else
