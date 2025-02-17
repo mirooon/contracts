@@ -12,6 +12,10 @@ on:
   pull_request:
     types:
       - ready_for_review
+      - synchronize
+  pull_request_review:
+    types:
+      - submitted
   workflow_dispatch:
 
 jobs:
