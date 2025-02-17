@@ -96,6 +96,11 @@ jobs:
 
               FORMATTED_DISMISS_REASON=$(echo "$DISMISS_REASON" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
 
+              echo "FORMATTED_DISMISS_REASON"
+              echo $FORMATTED_DISMISS_REASON
+              echo "DISMISS_COMMENT"
+              echo $DISMISS_COMMENT
+
               COMMENT_BODY+="🟢 **[View Alert]($ALERT_URL)**\n"
               COMMENT_BODY+="📌 **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="💡 **Issue:** $ALERT_DESCRIPTION\n"
@@ -127,7 +132,9 @@ jobs:
           COMMENT_BODY="${COMMENT_BODY//$'\n'/'\n'}"  # Ensure newlines are preserved
           # Update existing comment if found
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
-          echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
+            echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
+            echo "COMMENT_BODY"
+            echo $COMMENT_BODY
             curl -s -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
               -d "{\"body\": $COMMENT_BODY}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
