@@ -126,7 +126,10 @@ jobs:
 
           echo "COMMENT_BODY"
           echo $COMMENT_BODY
-          COMMENT_BODY_JSON=$(jq -Rs . <<< "$COMMENT_BODY")
+          COMMENT_BODY_JSON=$(printf '%s' "$COMMENT_BODY" | jq -Rs .)
+          echo "COMMENT_BODY_JSON"
+          echo $COMMENT_BODY_JSON
+
 
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
             HTTP_RESPONSE=$(curl -s -o response.json -w "%{http_code}" -X PATCH \
