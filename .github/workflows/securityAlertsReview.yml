@@ -134,7 +134,7 @@ jobs:
           fi
 
           if [[ "$UNRESOLVED_COUNT" -gt 0 || "$DISMISSED_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="⚠️ **Please resolve the above issues before merging.**\n\n"
+            COMMENT_BODY+="⚠️ **Please resolve the above issues before merging.**\n\n\n\n\n\n"
           fi
 
           # Add Dismissed Alerts With Comments (Successful dismissals)
@@ -155,8 +155,6 @@ jobs:
               COMMENT_BODY+="   🔹 Dismiss Reason: **$CAPITALIZED_REASON**\n"
               COMMENT_BODY+="   🔹 Dismiss Comment: $DISMISS_COMMENT\n\n"
             done < <(echo "$COMMENTED_ALERTS" | jq -c '.[]')
-
-            COMMENT_BODY+="✅ All dismissed alerts have proper comments.\n\n"
           fi
 
           # If no unresolved alerts and no dismissed alerts missing comments, add overall success message
