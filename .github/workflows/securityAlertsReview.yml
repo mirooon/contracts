@@ -126,7 +126,7 @@ jobs:
 
           echo "COMMENT_BODY"
           echo $COMMENT_BODY
-          COMMENT_BODY_JSON=$(printf '%s' "$COMMENT_BODY" | jq -Rs .)
+          COMMENT_BODY_JSON=$(jq -n --arg body "$COMMENT_BODY" '{body: $body}')
           echo "COMMENT_BODY_JSON"
           echo $COMMENT_BODY_JSON
 
