@@ -65,7 +65,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           COMMENT_BODY=$'### 🤖 GitHub Action: Security Alerts Review 🔍\n'
-
+          COMMENT_BODY=$(echo -e "$COMMENT_BODY")
           # Unresolved Alerts
           if [[ "$UNRESOLVED_COUNT" -gt 0 ]]; then
             COMMENT_BODY+=$'\n## 🚨 Unresolved Security Alerts\n'
