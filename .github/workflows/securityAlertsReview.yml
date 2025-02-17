@@ -120,7 +120,6 @@ jobs:
 
           # Add Dismissed Alerts Without Comments
           if [[ "$DISMISSED_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="🟡 **Provide a dismissal reason** for dismissed alerts without comments:\n"
             COMMENT_BODY+="The following alerts were dismissed but require a dismissal comment:\n\n"
 
             while IFS= read -r row; do
@@ -134,7 +133,7 @@ jobs:
           fi
 
           if [[ "$UNRESOLVED_COUNT" -gt 0 || "$DISMISSED_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="⚠️ **Please resolve the above issues before merging.**\n\n\n\n\n\n"
+            COMMENT_BODY+="⚠️ **Please resolve the above issues before merging.**\n\n"
           fi
 
           # Add Dismissed Alerts With Comments (Successful dismissals)
