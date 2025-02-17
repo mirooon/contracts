@@ -134,13 +134,12 @@ jobs:
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
             HTTP_RESPONSE=$(curl -s -o response.json -w "%{http_code}" -X PATCH \
               -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": $COMMENT_BODY_JSON}"
+              -d "{\"body\": $COMMENT_BODY_JSON}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}")
-
           else
             HTTP_RESPONSE=$(curl -s -o response.json -w "%{http_code}" -X POST \
               -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": $COMMENT_BODY_JSON}"
+              -d "{\"body\": $COMMENT_BODY_JSON}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments")
           fi
 
