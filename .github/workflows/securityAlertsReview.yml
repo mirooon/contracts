@@ -123,55 +123,34 @@ jobs:
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
               ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
-              echo "here"
               DISMISS_REASON=$(echo "$row" | jq -r '.dismissed_reason')
               DISMISS_COMMENT=$(echo "$row" | jq -r '.dismissed_comment')
-              echo "DISMISS_REASON"
-              echo $DISMISS_REASON
-              echo "DISMISS_COMMENT"
-              echo $DISMISS_COMMENT
+
+              # Capitalize the first letter of the dismissal reason
+              FORMATTED_DISMISS_REASON=$(echo "$DISMISS_REASON" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
 
               COMMENT_BODY+="🟢 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n"
-              COMMENT_BODY+="   ✏️ **Dismissal Reason:** \`$DISMISS_REASON\`\n"
+              COMMENT_BODY+="   ✏️ **Dismissal Reason:** \`$FORMATTED_DISMISS_REASON\`\n"
               COMMENT_BODY+="   💬 **Comment:** \"$DISMISS_COMMENT\"\n\n"
             done < <(echo "$DISMISSED_WITH_COMMENTS" | jq -c '.[]')
 
             COMMENT_BODY+="✅ **These alerts were dismissed with valid explanations.**\n\n"
           fi
 
-          # Add Dismissed Alerts Without Comments
-          if [[ "$DISMISSED_WITHOUT_COMMENTS_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="❌ **Some security alerts were dismissed without comments!** ❌\n"
-            COMMENT_BODY+="The following alerts were dismissed but require a reason:\n\n"
-
-            while IFS= read -r row; do
-              ALERT_URL=$(echo "$row" | jq -r '.html_url')
-              ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
-              ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
-
-              COMMENT_BODY+="⚠️ [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
-              COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
-            done < <(echo "$DISMISSED_WITHOUT_COMMENTS" | jq -c '.[]')
-
-            COMMENT_BODY+="⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
-          fi
-
-          # If no issues, success message
-          if [[ "$UNRESOLVED_COUNT" -eq 0 && "$DISMISSED_WITHOUT_COMMENTS_COUNT" -eq 0 ]]; then
-            COMMENT_BODY+="✅ **No unresolved security alerts!** 🎉\n\n"
-          fi
+          # Convert COMMENT_BODY to a properly formatted JSON string
+          COMMENT_BODY_JSON=$(echo "$COMMENT_BODY" | jq -Rs .)
 
           # Update existing comment if found
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
             echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
             curl -s -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": \"$COMMENT_BODY\"}" \
+              -d "{\"body\": $COMMENT_BODY_JSON}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
           else
             echo "Posting new comment to PR..."
             curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": \"$COMMENT_BODY\"}" \
+              -d "{\"body\": $COMMENT_BODY_JSON}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
 
