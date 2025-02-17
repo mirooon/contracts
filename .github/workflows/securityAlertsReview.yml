@@ -116,13 +116,11 @@ jobs:
               COMMENT_BODY+="🔴 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
             done < <(echo "$UNRESOLVED_ALERTS" | jq -c '.[]')
-
-            COMMENT_BODY+="⚠️ **Please resolve these alerts before merging.**\n\n"
           fi
 
           # Add Dismissed Alerts Without Comments
           if [[ "$DISMISSED_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="🟡 **Provide a dismissal reason** for dismissed alerts without comments:\n\n"
+            COMMENT_BODY+="🟡 **Provide a dismissal reason** for dismissed alerts without comments:\n"
             COMMENT_BODY+="The following alerts were dismissed but require a dismissal comment:\n\n"
 
             while IFS= read -r row; do
@@ -133,8 +131,10 @@ jobs:
               COMMENT_BODY+="🟡 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
             done < <(echo "$DISMISSED_ALERTS" | jq -c '.[]')
+          fi
 
-            COMMENT_BODY+="⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
+          if [[ "$UNRESOLVED_COUNT" -gt 0 || "$DISMISSED_COUNT" -gt 0 ]]; then
+            COMMENT_BODY+="⚠️ **Please resolve the above issues before merging.**\n\n"
           fi
 
           # Add Dismissed Alerts With Comments (Successful dismissals)
@@ -157,10 +157,6 @@ jobs:
             done < <(echo "$COMMENTED_ALERTS" | jq -c '.[]')
 
             COMMENT_BODY+="✅ All dismissed alerts have proper comments.\n\n"
-          fi
-
-          if [[ "$UNRESOLVED_COUNT" -gt 0 || "$DISMISSED_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="⚠️ **Please resolve the above issues before merging.**\n\n"
           fi
 
           # If no unresolved alerts and no dismissed alerts missing comments, add overall success message
