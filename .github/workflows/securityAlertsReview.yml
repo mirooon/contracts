@@ -144,10 +144,11 @@ jobs:
               ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
               DISMISS_REASON=$(echo "$row" | jq -r '.dismissed_reason')
               DISMISS_COMMENT=$(echo "$row" | jq -r '.dismissed_comment')
+              CAPITALIZED_REASON=$(echo "$DISMISS_REASON" | sed 's/^\(.\)/\U\1/')
 
               COMMENT_BODY+="🟢 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n"
-              COMMENT_BODY+="   🔹 Dismiss Reason: **$DISMISS_REASON**\n"
+              COMMENT_BODY+="   🔹 Dismiss Reason: **$CAPITALIZED_REASON**\n"
               COMMENT_BODY+="   🔹 Dismiss Comment: $DISMISS_COMMENT\n\n"
             done < <(echo "$COMMENTED_ALERTS" | jq -c '.[]')
 
