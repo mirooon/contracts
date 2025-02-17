@@ -50,24 +50,29 @@ jobs:
           echo "$ALERTS"
 
           # Ensure valid JSON parsing; default to empty array if parsing fails
-          UNRESOLVED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "open") ]' || echo "[]")
-          DISMISSED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment == null or .dismissed_comment == ""))]' || echo "[]")
+          UNRESOLVED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "open")]' || echo "[]")
+          DISMISSED_WITH_COMMENTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment != null and .dismissed_comment != ""))]' || echo "[]")
+          DISMISSED_WITHOUT_COMMENTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment == null or .dismissed_comment == ""))]' || echo "[]")
 
           UNRESOLVED_COUNT=$(echo "$UNRESOLVED_ALERTS" | jq -r 'length')
-          DISMISSED_COUNT=$(echo "$DISMISSED_ALERTS" | jq -r 'length')
+          DISMISSED_WITH_COMMENTS_COUNT=$(echo "$DISMISSED_WITH_COMMENTS" | jq -r 'length')
+          DISMISSED_WITHOUT_COMMENTS_COUNT=$(echo "$DISMISSED_WITHOUT_COMMENTS" | jq -r 'length')
 
           # Output for debugging
           echo "UNRESOLVED_ALERTS: $UNRESOLVED_ALERTS"
-          echo "DISMISSED_ALERTS: $DISMISSED_ALERTS"
+          echo "DISMISSED_WITH_COMMENTS: $DISMISSED_WITH_COMMENTS"
+          echo "DISMISSED_WITHOUT_COMMENTS: $DISMISSED_WITHOUT_COMMENTS"
           echo "UNRESOLVED_COUNT: $UNRESOLVED_COUNT"
-          echo "DISMISSED_COUNT: $DISMISSED_COUNT"
+          echo "DISMISSED_WITH_COMMENTS_COUNT: $DISMISSED_WITH_COMMENTS_COUNT"
+          echo "DISMISSED_WITHOUT_COMMENTS_COUNT: $DISMISSED_WITHOUT_COMMENTS_COUNT"
 
           # Save them properly in the environment as single-line JSON
           echo "UNRESOLVED_ALERTS=$UNRESOLVED_ALERTS" >> $GITHUB_ENV
-          echo "DISMISSED_ALERTS=$DISMISSED_ALERTS" >> $GITHUB_ENV
+          echo "DISMISSED_WITH_COMMENTS=$DISMISSED_WITH_COMMENTS" >> $GITHUB_ENV
+          echo "DISMISSED_WITHOUT_COMMENTS=$DISMISSED_WITHOUT_COMMENTS" >> $GITHUB_ENV
           echo "UNRESOLVED_COUNT=$UNRESOLVED_COUNT" >> $GITHUB_ENV
-          echo "DISMISSED_COUNT=$DISMISSED_COUNT" >> $GITHUB_ENV
-
+          echo "DISMISSED_WITH_COMMENTS_COUNT=$DISMISSED_WITH_COMMENTS_COUNT" >> $GITHUB_ENV
+          echo "DISMISSED_WITHOUT_COMMENTS_COUNT=$DISMISSED_WITHOUT_COMMENTS_COUNT" >> $GITHUB_ENV
 
       - name: Find Existing PR Comment
         id: find_comment
@@ -97,9 +102,6 @@ jobs:
             COMMENT_BODY+="🚨 **Unresolved Security Alerts Found!** 🚨\n"
             COMMENT_BODY+="The following security alerts must be **resolved** before merging:\n\n"
 
-            echo "UNRESOLVED_ALERTS"
-            echo "$UNRESOLVED_ALERTS"
-
             while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
@@ -109,16 +111,32 @@ jobs:
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
             done < <(echo "$UNRESOLVED_ALERTS" | jq -c '.[]')
 
-            COMMENT_BODY+="\n⚠️ **Please resolve these alerts before merging.**\n\n"
+            COMMENT_BODY+="⚠️ **Please resolve these alerts before merging.**\n\n"
+          fi
+
+          # Add Dismissed Alerts With Comments
+          if [[ "$DISMISSED_WITH_COMMENTS_COUNT" -gt 0 ]]; then
+            COMMENT_BODY+="🟢 **Some security alerts were dismissed with comments.** ✅\n"
+            COMMENT_BODY+="The following alerts were dismissed with explanations:\n\n"
+
+            while IFS= read -r row; do
+              ALERT_URL=$(echo "$row" | jq -r '.html_url')
+              ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
+              ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
+              DISMISS_REASON=$(echo "$row" | jq -r '.dismissed_comment')
+
+              COMMENT_BODY+="🟢 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
+              COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n"
+              COMMENT_BODY+="   ✏️ Dismissal Reason: \`$DISMISS_REASON\`\n\n"
+            done < <(echo "$DISMISSED_WITH_COMMENTS" | jq -c '.[]')
+
+            COMMENT_BODY+="✅ **These alerts were dismissed with valid explanations.**\n\n"
           fi
 
           # Add Dismissed Alerts Without Comments
-          if [[ "$DISMISSED_COUNT" -gt 0 ]]; then
+          if [[ "$DISMISSED_WITHOUT_COMMENTS_COUNT" -gt 0 ]]; then
             COMMENT_BODY+="❌ **Some security alerts were dismissed without comments!** ❌\n"
             COMMENT_BODY+="The following alerts were dismissed but require a reason:\n\n"
-
-            echo "DISMISSED_ALERTS"
-            echo "$DISMISSED_ALERTS"
 
             while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
@@ -127,13 +145,13 @@ jobs:
 
               COMMENT_BODY+="⚠️ [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
-            done < <(echo "$DISMISSED_ALERTS" | jq -c '.[]')
+            done < <(echo "$DISMISSED_WITHOUT_COMMENTS" | jq -c '.[]')
 
-            COMMENT_BODY+="\n⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
+            COMMENT_BODY+="⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
           fi
 
-          # If no unresolved or dismissed alerts without comments, add success message
-          if [[ "$UNRESOLVED_COUNT" -eq 0 && "$DISMISSED_COUNT" -eq 0 ]]; then
+          # If no issues, success message
+          if [[ "$UNRESOLVED_COUNT" -eq 0 && "$DISMISSED_WITHOUT_COMMENTS_COUNT" -eq 0 ]]; then
             COMMENT_BODY+="✅ **No unresolved security alerts!** 🎉\n\n"
           fi
 
@@ -149,6 +167,7 @@ jobs:
               -d "{\"body\": \"$COMMENT_BODY\"}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
+
 
       - name: Check if Action Should Fail
         run: |
