@@ -123,8 +123,13 @@ jobs:
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
               ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
+              echo "here"
               DISMISS_REASON=$(echo "$row" | jq -r '.dismissed_reason')
               DISMISS_COMMENT=$(echo "$row" | jq -r '.dismissed_comment')
+              echo "DISMISS_REASON"
+              echo $DISMISS_REASON
+              echo "DISMISS_COMMENT"
+              echo $DISMISS_COMMENT
 
               COMMENT_BODY+="🟢 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n"
