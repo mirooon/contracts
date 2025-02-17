@@ -50,29 +50,24 @@ jobs:
           echo "$ALERTS"
 
           # Ensure valid JSON parsing; default to empty array if parsing fails
-          UNRESOLVED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "open")]' || echo "[]")
-          DISMISSED_WITH_COMMENTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment != null and .dismissed_comment != ""))]' || echo "[]")
-          DISMISSED_WITHOUT_COMMENTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment == null or .dismissed_comment == ""))]' || echo "[]")
+          UNRESOLVED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "open") ]' || echo "[]")
+          DISMISSED_ALERTS=$(echo "$ALERTS" | jq -c '[.[] | select(.state == "dismissed" and (.dismissed_comment == null or .dismissed_comment == ""))]' || echo "[]")
 
           UNRESOLVED_COUNT=$(echo "$UNRESOLVED_ALERTS" | jq -r 'length')
-          DISMISSED_WITH_COMMENTS_COUNT=$(echo "$DISMISSED_WITH_COMMENTS" | jq -r 'length')
-          DISMISSED_WITHOUT_COMMENTS_COUNT=$(echo "$DISMISSED_WITHOUT_COMMENTS" | jq -r 'length')
+          DISMISSED_COUNT=$(echo "$DISMISSED_ALERTS" | jq -r 'length')
 
           # Output for debugging
           echo "UNRESOLVED_ALERTS: $UNRESOLVED_ALERTS"
-          echo "DISMISSED_WITH_COMMENTS: $DISMISSED_WITH_COMMENTS"
-          echo "DISMISSED_WITHOUT_COMMENTS: $DISMISSED_WITHOUT_COMMENTS"
+          echo "DISMISSED_ALERTS: $DISMISSED_ALERTS"
           echo "UNRESOLVED_COUNT: $UNRESOLVED_COUNT"
-          echo "DISMISSED_WITH_COMMENTS_COUNT: $DISMISSED_WITH_COMMENTS_COUNT"
-          echo "DISMISSED_WITHOUT_COMMENTS_COUNT: $DISMISSED_WITHOUT_COMMENTS_COUNT"
+          echo "DISMISSED_COUNT: $DISMISSED_COUNT"
 
           # Save them properly in the environment as single-line JSON
           echo "UNRESOLVED_ALERTS=$UNRESOLVED_ALERTS" >> $GITHUB_ENV
-          echo "DISMISSED_WITH_COMMENTS=$DISMISSED_WITH_COMMENTS" >> $GITHUB_ENV
-          echo "DISMISSED_WITHOUT_COMMENTS=$DISMISSED_WITHOUT_COMMENTS" >> $GITHUB_ENV
+          echo "DISMISSED_ALERTS=$DISMISSED_ALERTS" >> $GITHUB_ENV
           echo "UNRESOLVED_COUNT=$UNRESOLVED_COUNT" >> $GITHUB_ENV
-          echo "DISMISSED_WITH_COMMENTS_COUNT=$DISMISSED_WITH_COMMENTS_COUNT" >> $GITHUB_ENV
-          echo "DISMISSED_WITHOUT_COMMENTS_COUNT=$DISMISSED_WITHOUT_COMMENTS_COUNT" >> $GITHUB_ENV
+          echo "DISMISSED_COUNT=$DISMISSED_COUNT" >> $GITHUB_ENV
+
 
       - name: Find Existing PR Comment
         id: find_comment
@@ -95,82 +90,63 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          COMMENT_BODY="### 🤖 GitHub Action: Security Alerts Review 🔍\n"
+          COMMENT_BODY="### 🤖 GitHub Action: Security Alerts Review 🔍\n\n"
 
           # Add Unresolved Alerts
           if [[ "$UNRESOLVED_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="\n## ❌ Unresolved Security Alerts\n"
-            COMMENT_BODY+="These **must be resolved** before merging:\n\n"
+            COMMENT_BODY+="🚨 **Unresolved Security Alerts Found!** 🚨\n"
+            COMMENT_BODY+="The following security alerts must be **resolved** before merging:\n\n"
+
+            echo "UNRESOLVED_ALERTS"
+            echo "$UNRESOLVED_ALERTS"
 
             while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
               ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
 
-              COMMENT_BODY+="🔴 **[View Alert]($ALERT_URL)**\n"
-              COMMENT_BODY+="📌 **File:** \`$ALERT_FILE\`\n"
-              COMMENT_BODY+="💡 **Issue:** $ALERT_DESCRIPTION\n\n"
+              COMMENT_BODY+="🔴 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
+              COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
             done < <(echo "$UNRESOLVED_ALERTS" | jq -c '.[]')
 
-            COMMENT_BODY+="⚠️ **Please resolve these alerts before merging.**\n\n"
-          fi
-
-          # Add Dismissed Alerts With Comments
-          if [[ "$DISMISSED_WITH_COMMENTS_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="\n## ✅ Dismissed Alerts with Explanations\n"
-            COMMENT_BODY+="The following alerts were **dismissed with valid reasons**:\n\n"
-
-            while IFS= read -r row; do
-              ALERT_URL=$(echo "$row" | jq -r '.html_url')
-              ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
-              ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
-              DISMISS_REASON=$(echo "$row" | jq -r '.dismissed_reason')
-              DISMISS_COMMENT=$(echo "$row" | jq -r '.dismissed_comment')
-
-              # Capitalize the first letter of the dismissal reason
-              FORMATTED_DISMISS_REASON=$(echo "$DISMISS_REASON" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
-
-              COMMENT_BODY+="🟢 **[View Alert]($ALERT_URL)**\n"
-              COMMENT_BODY+="📌 **File:** \`$ALERT_FILE\`\n"
-              COMMENT_BODY+="💡 **Issue:** $ALERT_DESCRIPTION\n"
-              COMMENT_BODY+="✏️ **Dismissal Reason:** \`$FORMATTED_DISMISS_REASON\`\n"
-              COMMENT_BODY+="💬 **Comment:** \"$DISMISS_COMMENT\"\n\n"
-            done < <(echo "$DISMISSED_WITH_COMMENTS" | jq -c '.[]')
-
-            COMMENT_BODY+="✅ **These alerts were reviewed and dismissed correctly.**\n\n"
+            COMMENT_BODY+="\n⚠️ **Please resolve these alerts before merging.**\n\n"
           fi
 
           # Add Dismissed Alerts Without Comments
-          if [[ "$DISMISSED_WITHOUT_COMMENTS_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="\n## ⚠️ Dismissed Alerts Without Comments\n"
-            COMMENT_BODY+="The following alerts were **dismissed without explanations**:\n\n"
+          if [[ "$DISMISSED_COUNT" -gt 0 ]]; then
+            COMMENT_BODY+="❌ **Some security alerts were dismissed without comments!** ❌\n"
+            COMMENT_BODY+="The following alerts were dismissed but require a reason:\n\n"
+
+            echo "DISMISSED_ALERTS"
+            echo "$DISMISSED_ALERTS"
 
             while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
               ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
 
-              COMMENT_BODY+="⚠️ **[View Alert]($ALERT_URL)**\n"
-              COMMENT_BODY+="📌 **File:** \`$ALERT_FILE\`\n"
-              COMMENT_BODY+="💡 **Issue:** $ALERT_DESCRIPTION\n\n"
-            done < <(echo "$DISMISSED_WITHOUT_COMMENTS" | jq -c '.[]')
+              COMMENT_BODY+="⚠️ [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
+              COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n\n"
+            done < <(echo "$DISMISSED_ALERTS" | jq -c '.[]')
 
-            COMMENT_BODY+="⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
+            COMMENT_BODY+="\n⚠️ **Please provide a dismissal reason for these alerts.**\n\n"
           fi
 
-          # Convert COMMENT_BODY to a properly formatted JSON string
-          COMMENT_BODY_JSON=$(echo "$COMMENT_BODY" | jq -Rs .)
+          # If no unresolved or dismissed alerts without comments, add success message
+          if [[ "$UNRESOLVED_COUNT" -eq 0 && "$DISMISSED_COUNT" -eq 0 ]]; then
+            COMMENT_BODY+="✅ **No unresolved security alerts!** 🎉\n\n"
+          fi
 
           # Update existing comment if found
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
             echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
             curl -s -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": $COMMENT_BODY_JSON}" \
+              -d "{\"body\": \"$COMMENT_BODY\"}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
           else
             echo "Posting new comment to PR..."
             curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": $COMMENT_BODY_JSON}" \
+              -d "{\"body\": \"$COMMENT_BODY\"}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
 
