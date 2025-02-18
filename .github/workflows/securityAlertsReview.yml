@@ -169,23 +169,23 @@ jobs:
           echo "INVALID_REASON_COUNT"
           echo $INVALID_REASON_COUNT
           # Add alerts dismissed with an invalid reason ("Used in tests")
-          if [[ "$INVALID_REASON_COUNT" -gt 0 ]]; then
-            COMMENT_BODY+="❌ **Invalid Dismissal Reasons Found!** ❌\n"
-            COMMENT_BODY+="The following alerts were dismissed with the reason **\"Used in tests\"**, which is not allowed for production code. Please provide a valid dismissal reason.\n\n"
+          # if [[ "$INVALID_REASON_COUNT" -gt 0 ]]; then
+          #   COMMENT_BODY+="❌ **Invalid Dismissal Reasons Found!** ❌\n"
+          #   COMMENT_BODY+="The following alerts were dismissed with the reason **\"Used in tests\"**, which is not allowed for production code. Please provide a valid dismissal reason.\n\n"
 
-            echo "here"
-            while IFS= read -r row; do
-              ALERT_URL=$(echo "$row" | jq -r '.html_url')
-              ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
-              ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
-              DISMISS_REASON=$(echo "$row" | jq -r '.dismissed_reason')
-              CAPITALIZED_REASON=$(echo "$DISMISS_REASON" | sed 's/^\(.\)/\U\1/')
+          #   echo "here"
+          #   while IFS= read -r row; do
+          #     ALERT_URL=$(echo "$row" | jq -r '.html_url')
+          #     ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
+          #     ALERT_DESCRIPTION=$(echo "$row" | jq -r '.most_recent_instance.message.text')
+          #     DISMISS_REASON=$(echo "$row" | jq -r '.dismissed_reason')
+          #     CAPITALIZED_REASON=$(echo "$DISMISS_REASON" | sed 's/^\(.\)/\U\1/')
               
-              COMMENT_BODY+="❌ [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
-              # COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n"
-              # COMMENT_BODY+="   🔹 Dismiss Reason: **$CAPITALIZED_REASON** (invalid for production code)\n\n"
-            done < <(echo "$RESOLVED_ALERTS" | jq -c '.[] | select(.dismissed_reason == "used in tests")')
-          fi
+          #     COMMENT_BODY+="❌ [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
+          #     # COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n"
+          #     # COMMENT_BODY+="   🔹 Dismiss Reason: **$CAPITALIZED_REASON** (invalid for production code)\n\n"
+          #   done < <(echo "$RESOLVED_ALERTS" | jq -c '.[] | select(.dismissed_reason == "used in tests")')
+          # fi
 
           if [[ "$UNRESOLVED_COUNT" -gt 0 || "$DISMISSED_COUNT" -gt 0 || "$INVALID_REASON_COUNT" -gt 0 ]]; then
             COMMENT_BODY+="⚠️ **Please resolve the above issues before merging.**\n\n"
