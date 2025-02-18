@@ -235,7 +235,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ env.PR_NUMBER }}
-          PULL_REQUEST_NODE_ID: ${{ github.event.pull_request.node_id }}
         run: |
           echo "🔍 Checking if the workflow should fail and revert PR to draft based on security alerts..."
 
@@ -252,6 +251,10 @@ jobs:
               echo "- $INVALID_REASON_COUNT alert(s) have an invalid dismissal reason (\"Used in tests\")."
             fi
             echo "⚠️ These alerts must be resolved before merging."
+
+          # Retrieve PR Node ID directly from github event
+          PULL_REQUEST_NODE_ID="${{ github.event.pull_request.node_id }}"
+          echo "PR Node ID: $PULL_REQUEST_NODE_ID"
 
             # Revert the PR to draft.
             echo "Reverting PR #${PR_NUMBER} to draft state due to blocking security issues..."
