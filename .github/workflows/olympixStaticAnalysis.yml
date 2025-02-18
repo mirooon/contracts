@@ -62,5 +62,5 @@ jobs:
           curl -X POST \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/dispatches \
-            -d "{\"event_type\": \"trigger-security-alerts-review-workflow\", \"client_payload\": {\"ref\": \"${{ github.ref }}\"}}"
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/securityAlertsReview.yml/dispatches \
+            -d "{\"ref\": \"${{ github.head_ref }}\", \"inputs\": {\"event_type\": \"trigger-security-alerts-review-workflow\"}}"
