@@ -17,8 +17,11 @@ on:
     types:
       - submitted
   workflow_run:
-     workflows: ["Olympix Static Analysis"]
-     types: [completed]
+    workflows: ["Olympix Static Analysis"]
+    types:
+      - completed
+    branches:
+      - "**"  # Ensures it runs only on the same branch
   workflow_dispatch:
 
 jobs:
