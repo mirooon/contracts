@@ -39,8 +39,6 @@ jobs:
         run: |
           args=$(echo $ALL_CHANGED_FILES | xargs -n 1 -I {} printf -- "-p %s " "{}")
           echo "ARGS=$args" >> $GITHUB_ENV
-          echo "ALL_CHANGED_FILES"
-          echo $ALL_CHANGED_FILES
 
       - name: Run Olympix Integrated Security
         if: steps.changed-files.outputs.any_changed == 'true'
