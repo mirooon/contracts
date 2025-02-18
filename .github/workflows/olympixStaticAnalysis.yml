@@ -2,7 +2,7 @@ name: Olympix Static Analysis
 
 # - runs the olympix static analyzer on newly added or modified solidity contracts inside the src/ folder in a pull request (pr).
 # - detects potential security vulnerabilities and uploads the results to github code scanning.
-# - only scans changed (added, renamed, modified) solidity files in src/, instead of the whole repository, optimizing performance.
+# - only scans diff (added, renamed, modified) solidity files in src/, instead of the whole repository, optimizing performance.
 # - ensures security issues are identified before merging, allowing the team to review and discuss findings within the pr.
 
 on:
@@ -21,15 +21,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Echo current branch
+        run: echo "Current branch is ${{ github.ref }}"
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Get changed (added, renamed, modified) Solidity Files
+      - name: Get added, renamed, modified Solidity Files
         id: changed-files
         uses: tj-actions/changed-files@v45
         with:
           files: |
-            **/*.sol
+            src/**.sol
 
       - name: Convert Changed Files to Args
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -53,14 +56,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: olympix.sarif
-
-      # - name: Trigger Security Alerts Review action
-      #   if: steps.changed-files.outputs.any_changed == 'true'
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #     echo "Triggering 'Security Alerts Review' action..."
-      #     curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
-      #          -H "Accept: application/vnd.github.v3+json" \
-      #          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/securityAlertsReview.yml/dispatches" \
-      #          -d '{"ref": "${{ github.ref }}"}'
