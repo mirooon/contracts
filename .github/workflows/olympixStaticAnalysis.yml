@@ -29,7 +29,7 @@ jobs:
         uses: tj-actions/changed-files@v45
         with:
           files: |
-            */**.sol
+            src/**/*.sol
           
       - name: Echo Changed Files Flag via Random Env Variable
         run: |
