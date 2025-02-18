@@ -28,14 +28,18 @@ jobs:
         id: check-analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
+          echo "Checking latest Olympix Static Analysis run for branch: $BRANCH_NAME"
+
+          # Fetch the latest run of the Olympix Static Analysis workflow for this branch
           LATEST_RUN=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/olympixStaticAnalysis.yml/runs?status=completed&per_page=1")
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/olympixStaticAnalysis.yml/runs?status=completed&branch=${BRANCH_NAME}&per_page=1")
 
           WORKFLOW_STATUS=$(echo "$LATEST_RUN" | jq -r '.workflow_runs[0].conclusion')
 
           if [[ "$WORKFLOW_STATUS" != "success" ]]; then
-            echo "Olympix Static Analysis did not complete successfully. Exiting."
+            echo "Olympix Static Analysis did not complete successfully for this branch. Exiting."
             exit 1
           fi
       - name: Fetch PR Number
