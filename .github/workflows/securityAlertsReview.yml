@@ -168,7 +168,7 @@ jobs:
           # Add alerts dismissed with an invalid reason ("Used in tests")
           if [[ "$INVALID_REASON_COUNT" -gt 0 ]]; then
             COMMENT_BODY+="❌ **Invalid Dismissal Reasons Found!** ❌\n"
-            COMMENT_BODY+="The following alerts were dismissed with the reason **\"Used in tests\"**, which is not allowed for production code. Please provide a valid dismissal reason.\n\n"
+            COMMENT_BODY+="The following alerts were dismissed with the reason **Used in tests**, which is not allowed for production code. Please provide a valid dismissal reason.\n\n"
 
             while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
@@ -216,7 +216,7 @@ jobs:
           if [[ "$UNRESOLVED_COUNT" -eq 0 && "$DISMISSED_COUNT" -eq 0 && "$INVALID_REASON_COUNT" -eq 0 ]]; then
             COMMENT_BODY+="✅ **No unresolved security alerts!** 🎉\n\n"
           fi
-          echo "COMMENT_BODY"
+          echo $COMMENT_BODY"
           echo $COMMENT_BODY
           # Update existing comment if found; otherwise, post a new one.
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
@@ -248,7 +248,7 @@ jobs:
               echo "- $DISMISSED_COUNT security alert(s) were dismissed without comments!"
             fi
             if [[ "$INVALID_REASON_COUNT" -gt 0 ]]; then
-              echo "- $INVALID_REASON_COUNT alert(s) have an invalid dismissal reason (\"Used in tests\")."
+              echo "- $INVALID_REASON_COUNT alert(s) have an invalid dismissal reason (Used in tests)."
             fi
             echo "⚠️ These alerts must be resolved before merging."
 
