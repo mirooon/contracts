@@ -33,6 +33,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH_NAME: ${{ github.head_ref }}
         run: |
+
+          # Fallback in case BRANCH_NAME is empty.
+          if [ -z "$BRANCH_NAME" ]; then
+            BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}"
+            echo "BRANCH_NAME was empty, falling back to: $BRANCH_NAME"
+          fi
+
           echo "Checking latest Olympix Static Analysis run for branch: $BRANCH_NAME"
 
           # Fetch the latest completed runs of the Olympix Static Analysis workflow
