@@ -166,14 +166,11 @@ jobs:
           fi
 
 
-          echo "INVALID_REASON_COUNT"
-          echo $INVALID_REASON_COUNT
           # Add alerts dismissed with an invalid reason ("Used in tests")
           if [[ "$INVALID_REASON_COUNT" -gt 0 ]]; then
             COMMENT_BODY+="❌ **Invalid Dismissal Reasons Found!** ❌\n"
             COMMENT_BODY+="The following alerts were dismissed with the reason **Used in tests**, which is not allowed for production code. Please provide a valid dismissal reason.\n\n"
 
-            echo "here"
             while IFS= read -r row; do
               ALERT_URL=$(echo "$row" | jq -r '.html_url')
               ALERT_FILE=$(echo "$row" | jq -r '.most_recent_instance.location.path')
@@ -199,7 +196,6 @@ jobs:
             while IFS= read -r row; do
               # Skip alerts that were dismissed with an invalid reason
               if echo "$row" | jq -e 'select(.dismissed_reason == "used in tests")' > /dev/null; then
-                echo "here2"
                 continue
               fi
 
@@ -239,6 +235,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ env.PR_NUMBER }}
+          PULL_REQUEST_NODE_ID: ${{ github.event.pull_request.node_id }}
         run: |
           echo "🔍 Checking if the workflow should fail and revert PR to draft based on security alerts..."
 
