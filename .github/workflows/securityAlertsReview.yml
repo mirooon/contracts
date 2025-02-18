@@ -17,11 +17,8 @@ on:
     types:
       - submitted
   workflow_run:
-    workflows: ["Olympix Static Analysis"]
-    types:
-      - completed
-    status:
-      - success
+     workflows: ["Olympix Static Analysis"]
+     types: [completed]
   workflow_dispatch:
 
 jobs:
