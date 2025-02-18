@@ -39,8 +39,6 @@ jobs:
         run: |
           args=$(echo $ALL_CHANGED_FILES | xargs -n 1 -I {} printf -- "-p %s " "{}")
           echo "ARGS=$args" >> $GITHUB_ENV
-          echo "ALL_CHANGED_FILES"
-          echo $ALL_CHANGED_FILES
 
       - name: Run Olympix Integrated Security
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -56,13 +54,13 @@ jobs:
         with:
           sarif_file: olympix.sarif
 
-      - name: Trigger Security Alerts Review
-        if: success()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Triggering Security Alerts Review..."
-          curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
-               -H "Accept: application/vnd.github.v3+json" \
-               "https://api.github.com/repos/${{ github.repository }}/actions/workflows/securityAlertsReview.yml/dispatches" \
-               -d '{"ref": "${{ github.ref }}"}'
+      # - name: Trigger Security Alerts Review action
+      #   if: steps.changed-files.outputs.any_changed == 'true'
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     echo "Triggering 'Security Alerts Review' action..."
+      #     curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+      #          -H "Accept: application/vnd.github.v3+json" \
+      #          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/securityAlertsReview.yml/dispatches" \
+      #          -d '{"ref": "${{ github.ref }}"}'

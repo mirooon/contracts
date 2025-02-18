@@ -6,9 +6,6 @@ name: Security Alerts Review
 # - helps maintain a transparent and collaborative security review process by generating a pr comment summarizing the status of all security alerts.
 
 on:
-  push:
-    paths:
-      - 'src/**.sol'
   pull_request:
     types:
       - synchronize
@@ -17,6 +14,12 @@ on:
   pull_request_review:
     types:
       - submitted
+  workflow_run:
+    workflows: ["Olympix Static Analysis"]
+    types:
+      - completed
+    status:
+      - success
   workflow_dispatch:
 
 jobs:
