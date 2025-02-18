@@ -1,5 +1,10 @@
 name: Olympix Static Analysis
 
+# - runs the olympix static analyzer on newly added or modified solidity contracts inside the src/ folder in a pull request (pr).
+# - detects potential security vulnerabilities and uploads the results to github code scanning.
+# - only scans changed solidity files in src/, instead of the whole repository, optimizing performance.
+# - ensures security issues are identified before merging, allowing the team to review and discuss findings within the pr.
+
 on:
   pull_request:
     types:
@@ -9,7 +14,6 @@ on:
       - ready_for_review
     paths:
       - 'src/**.sol'
-      - '.github/workflows/olympixStaticAnalysis.yml'
 
 jobs:
   static-analysis:
@@ -18,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get Changed Solidity Files
         id: changed-files
@@ -35,6 +39,8 @@ jobs:
         run: |
           args=$(echo $ALL_CHANGED_FILES | xargs -n 1 -I {} printf -- "-p %s " "{}")
           echo "ARGS=$args" >> $GITHUB_ENV
+          echo "ALL_CHANGED_FILES"
+          echo $ALL_CHANGED_FILES
 
       - name: Run Olympix Integrated Security
         if: steps.changed-files.outputs.any_changed == 'true'
