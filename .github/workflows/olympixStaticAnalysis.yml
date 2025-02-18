@@ -55,7 +55,7 @@ jobs:
           sarif_file: olympix.sarif
 
       - name: Trigger Security Alerts Review action
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
