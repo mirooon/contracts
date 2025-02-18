@@ -31,8 +31,10 @@ jobs:
           files: |
             */**.sol
           
-      - name: Show Changed Files Flag
-        run: echo "Changed files flag: ${{ steps.changed-files.outputs.any_changed }}"
+      - name: Echo Changed Files Flag via Random Env Variable
+        run: |
+          RANDOM_VAR="${{ steps.changed-files.outputs.any_changed }}"
+          echo "Random env variable (changed-files flag): $RANDOM_VAR"
 
       - name: Convert Changed Files to Args
         if: steps.changed-files.outputs.any_changed == 'true'
