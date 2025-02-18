@@ -206,9 +206,6 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
 
-      - name: Set PR Node ID
-        run: echo "PULL_REQUEST_NODE_ID=${{ github.event.pull_request.node_id }}" >> $GITHUB_ENV
-
       - name: Check if Action Should Fail And Revert To Draft
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
