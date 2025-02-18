@@ -18,6 +18,12 @@ on:
     types:
       - submitted
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Olympix Static Analysis"]
+    types:
+      - completed
+    status:
+      - success
 
 jobs:
   check-security-alerts:
