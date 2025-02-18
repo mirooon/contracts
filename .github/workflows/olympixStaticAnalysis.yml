@@ -37,6 +37,8 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
+          echo "ALL_CHANGED_FILES"
+          echo $ALL_CHANGED_FILES
           args=$(echo $ALL_CHANGED_FILES | xargs -n 1 -I {} printf -- "-p %s " "{}")
           echo "ARGS=$args" >> $GITHUB_ENV
 
