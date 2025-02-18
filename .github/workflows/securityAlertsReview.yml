@@ -35,13 +35,15 @@ jobs:
         run: |
           echo "Checking latest Olympix Static Analysis run for branch: $BRANCH_NAME"
 
-          # Fetch the latest completed run of the Olympix Static Analysis workflow for this branch
+          # Fetch the latest completed runs of the Olympix Static Analysis workflow
           LATEST_RUN=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/olympixStaticAnalysis.yml/runs?status=completed&branch=${BRANCH_NAME}&per_page=1")
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/olympixStaticAnalysis.yml/runs?status=completed&per_page=10")
 
           echo "LATEST_RUN:"
           echo "$LATEST_RUN"
-          WORKFLOW_STATUS=$(echo "$LATEST_RUN" | jq -r '.workflow_runs[0].conclusion')
+
+          # Filter to find the first run with head_branch matching our branch name
+          WORKFLOW_STATUS=$(echo "$LATEST_RUN" | jq -r --arg branch "$BRANCH_NAME" '.workflow_runs[] | select(.head_branch == $branch) | .conclusion' | head -n1)
           echo "WORKFLOW_STATUS:"
           echo "$WORKFLOW_STATUS"
 
@@ -50,6 +52,7 @@ jobs:
             echo "The Security Alerts Review workflow cannot continue because a valid Olympix Static Analysis report is required."
             exit 1
           fi
+
       - name: Fetch PR Number
         id: fetch_pr
         env:
