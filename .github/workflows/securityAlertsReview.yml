@@ -25,6 +25,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Echo current branch
+        run: echo "Current branch is ${{ github.ref }}"
+        
       - name: Fetch PR Number
         id: fetch_pr
         env:

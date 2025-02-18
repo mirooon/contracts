@@ -21,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Echo current branch
+        run: echo "Current branch is ${{ github.ref }}"
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
