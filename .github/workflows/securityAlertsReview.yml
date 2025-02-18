@@ -24,6 +24,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check if Olympix Static Analysis was successful
+        id: check-analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_RUN=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/olympixStaticAnalysis.yml/runs?status=completed&per_page=1")
+
+          WORKFLOW_STATUS=$(echo "$LATEST_RUN" | jq -r '.workflow_runs[0].conclusion')
+
+          if [[ "$WORKFLOW_STATUS" != "success" ]]; then
+            echo "Olympix Static Analysis did not complete successfully. Exiting."
+            exit 1
+          fi
       - name: Fetch PR Number
         id: fetch_pr
         env:
