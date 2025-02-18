@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check if Olympix Static Analysis was Successful
+      - name: Check if Olympix Static Analysis was successful
         id: check-analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
