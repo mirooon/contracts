@@ -226,12 +226,12 @@ jobs:
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
             echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
             curl -s -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": \"$COMMENT_BODY\"}" \
+              -d "{\"body\": \"${COMMENT_BODY//$'\n'/\\n}\"}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
           else
             echo "Posting new comment to PR..."
             curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": \"$COMMENT_BODY\"}" \
+              -d "{\"body\": \"${COMMENT_BODY//$'\n'/\\n}\"}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
 
