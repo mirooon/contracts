@@ -180,7 +180,7 @@ jobs:
               COMMENT_BODY+="❌ [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n"
               COMMENT_BODY+="   🔹 Dismiss Reason: **$CAPITALIZED_REASON** (invalid for production code)\n\n"
-            done < <(echo "$RESOLVED_ALERTS" | jq -c '.[] | select(.dismissed_reason == "Used in tests")')
+            done < <(echo "$RESOLVED_ALERTS" | jq -c '.[] | select(.dismissed_reason == "used in tests")')
           fi
 
           if [[ "$UNRESOLVED_COUNT" -gt 0 || "$DISMISSED_COUNT" -gt 0 || "$INVALID_REASON_COUNT" -gt 0 ]]; then
@@ -194,7 +194,7 @@ jobs:
 
             while IFS= read -r row; do
               # Skip alerts that were dismissed with an invalid reason
-              if echo "$row" | jq -e 'select(.dismissed_reason == "Used in tests")' > /dev/null; then
+              if echo "$row" | jq -e 'select(.dismissed_reason == "used in tests")' > /dev/null; then
                 continue
               fi
 
