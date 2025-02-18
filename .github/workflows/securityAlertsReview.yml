@@ -11,6 +11,8 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+    paths:
+      - 'src/**.sol'
   pull_request_review:
     types:
       - submitted
