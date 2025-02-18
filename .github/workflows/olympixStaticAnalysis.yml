@@ -30,6 +30,9 @@ jobs:
         with:
           files: |
             */**.sol
+          
+      - name: Show Changed Files Flag
+        run: echo "Changed files flag: ${{ steps.changed-files.outputs.any_changed }}"
 
       - name: Convert Changed Files to Args
         if: steps.changed-files.outputs.any_changed == 'true'
