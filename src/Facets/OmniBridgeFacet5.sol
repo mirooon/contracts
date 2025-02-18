@@ -12,7 +12,7 @@ import { Validatable } from "../Helpers/Validatable.sol";
 /// @author LI.FI (https://li.fi)
 /// @notice Provides functionality for bridging through OmniBridge
 /// @custom:version 1.0.0
-contract OmniBridgeFacet3 is ILiFi, ReentrancyGuard, SwapperV2, Validatable {
+contract OmniBridgeFacet5 is ILiFi, ReentrancyGuard, SwapperV2, Validatable {
     /// Storage ///
 
     /// @notice The contract address of the foreign omni bridge on the source chain.
