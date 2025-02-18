@@ -23,6 +23,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Ensure that the Olympix Static Analysis workflow has run successfully at least once before proceeding.
+      # This check is necessary because the Security Alerts Review workflow should not proceed unless
+      # a valid Olympix Static Analysis report is available for the current branch.
       - name: Check if Olympix Static Analysis has run at least once and was successful
         id: check-analysis
         env:
@@ -38,7 +41,8 @@ jobs:
           WORKFLOW_STATUS=$(echo "$LATEST_RUN" | jq -r '.workflow_runs[0].conclusion')
 
           if [[ "$WORKFLOW_STATUS" != "success" ]]; then
-            echo "Olympix Static Analysis did not complete successfully for this branch. Exiting."
+            echo "The Olympix Static Analysis workflow has not been successfully completed."
+            echo "The Security Alerts Review workflow cannot continue because a valid Olympix Static Analysis report is required."
             exit 1
           fi
       - name: Fetch PR Number
