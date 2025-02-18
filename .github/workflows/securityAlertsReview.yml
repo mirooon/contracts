@@ -206,6 +206,9 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
 
+      - name: Set PR Node ID
+        run: echo "PULL_REQUEST_NODE_ID=${{ github.event.pull_request.node_id }}" >> $GITHUB_ENV
+
       - name: Check if Action Should Fail And Revert To Draft
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -228,11 +231,11 @@ jobs:
 
             # Revert the PR to draft.
             echo "Reverting PR #${PR_NUMBER} to draft state due to blocking security issues..."
-            curl -X PATCH \
-              -H "Authorization: token ${GITHUB_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d '{"draft": true}' \
-              "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}"
+            curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+                 -H "Content-Type: application/json" \
+                 -X POST \
+                 -d '{"query": "mutation { convertPullRequestToDraft(input: {pullRequestId: \"'"$PULL_REQUEST_NODE_ID"'\"}) { pullRequest { id isDraft } } }"}' \
+                 https://api.github.com/graphql
             exit 1
           fi
 
