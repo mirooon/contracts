@@ -93,7 +93,7 @@ jobs:
           COMMENTED_COUNT=$(echo "$RESOLVED_ALERTS" | jq -r 'length')
           
           # Count dismissed alerts with the invalid reason "Used in tests" (invalid because only production code is analyzed)
-          INVALID_REASON_COUNT=$(echo "$RESOLVED_ALERTS" | jq -r '[.[] | select(.dismissed_reason == "Used in tests")] | length')
+          INVALID_REASON_COUNT=$(echo "$RESOLVED_ALERTS" | jq -r '[.[] | select(.dismissed_reason == "used in tests")] | length')
 
           # Output for debugging
           echo "UNRESOLVED_ALERTS: $UNRESOLVED_ALERTS"
