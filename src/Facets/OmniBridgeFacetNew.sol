@@ -20,7 +20,7 @@ contract OmniBridgeFacetNew is ILiFi, ReentrancyGuard, SwapperV2, Validatable {
 
     /// @notice The contract address of the weth omni bridge on the source chain.
     IOmniBridge private immutable wethOmniBridge;
-    IOmniBridge private immutable changedVariable;
+    IOmniBridge private changedVariable;
 
     /// Constructor ///
 
