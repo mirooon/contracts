@@ -209,7 +209,6 @@ jobs:
       - name: Check if Action Should Fail And Revert To Draft
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Ensure PR_NUMBER is set in an earlier step
           PR_NUMBER: ${{ env.PR_NUMBER }}
         run: |
           echo "🔍 Checking if the workflow should fail and revert PR to draft based on security alerts..."
