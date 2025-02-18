@@ -16,12 +16,8 @@ on:
   pull_request_review:
     types:
       - submitted
-  workflow_run:
-    workflows: ["Olympix Static Analysis"]
-    types:
-      - completed
-    branches:
-      - "**"  # Ensures it runs only on the same branch
+  repository_dispatch:
+    types: [trigger-security-alerts-review-workflow]
   workflow_dispatch:
 
 jobs:
