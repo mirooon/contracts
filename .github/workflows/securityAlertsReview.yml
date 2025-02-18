@@ -14,6 +14,12 @@ on:
   pull_request_review:
     types:
       - submitted
+  workflow_run:
+    workflows: ["Olympix Static Analysis"]
+    types:
+      - completed
+    status:
+      - success
   workflow_dispatch:
 
 jobs:
