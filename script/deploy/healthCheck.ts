@@ -1,13 +1,11 @@
 // @ts-nocheck
 import { consola } from 'consola'
-import { $, spinner } from 'zx'
+import { $ } from 'zx'
 import { defineCommand, runMain } from 'citty'
-import * as chains from 'viem/chains'
 import * as path from 'path'
 import * as fs from 'fs'
 import {
   Address,
-  Chain,
   Hex,
   PublicClient,
   createPublicClient,
@@ -20,35 +18,16 @@ import {
   Network,
   networks,
   getViemChainForNetworkName,
-  type NetworksObject,
 } from '../utils/viemScriptHelpers'
+import { coreFacets } from '../../config/global.json'
 
 const SAFE_THRESHOLD = 3
-
-const louperCmd = 'louper-cli'
-
-const coreFacets = [
-  'DiamondCutFacet',
-  'DiamondLoupeFacet',
-  'OwnershipFacet',
-  'WithdrawFacet',
-  'DexManagerFacet',
-  'PeripheryRegistryFacet',
-  'AccessManagerFacet',
-  'PeripheryRegistryFacet',
-  'GenericSwapFacet',
-  'GenericSwapFacetV3',
-  'LIFuelFacet',
-  'CalldataVerificationFacet',
-  'StandardizedCallFacet',
-]
 
 const corePeriphery = [
   'ERC20Proxy',
   'Executor',
   'Receiver',
   'FeeCollector',
-  'LiFuelFeeCollector',
   'TokenWrapper',
 ]
 
@@ -66,26 +45,8 @@ const main = defineCommand({
     },
   },
   async run({ args }) {
-    if ((await $`${louperCmd}`.exitCode) !== 0) {
-      const answer = await consola.prompt(
-        'Louper CLI is required but not installed. Would you like to install it now?',
-        {
-          type: 'confirm',
-        }
-      )
-      if (answer) {
-        await spinner(
-          'Installing...',
-          () => $`npm install -g @mark3labs/louper-cli`
-        )
-      } else {
-        consola.error('Louper CLI is required to run this script')
-        process.exit(1)
-      }
-    }
-
     const { network } = args
-    const deployedContracts = await import(
+    const { default: deployedContracts } = await import(
       `../../deployments/${network.toLowerCase()}.json`
     )
     const targetStateJson = await import(
@@ -106,8 +67,9 @@ const main = defineCommand({
     ] as Address[]
 
     const globalConfig = await import('../../config/global.json')
+    const networksConfig = await import('../../config/networks.json')
 
-    const chain = getViemChainForNetworkName(network)
+    const chain = getViemChainForNetworkName(network.toLowerCase())
 
     const publicClient = createPublicClient({
       batch: { multicall: true },
@@ -178,16 +140,66 @@ const main = defineCommand({
 
     let registeredFacets: string[] = []
     try {
-      const facetsResult =
-        await $`${louperCmd} inspect diamond -a ${diamondAddress} -n ${network} --json`
-      registeredFacets = JSON.parse(facetsResult.stdout).facets.map(
-        (f: { name: string }) => f.name
-      )
+      if (networksConfig[network.toLowerCase()].rpcUrl) {
+        const rpcUrl: string = networksConfig[network.toLowerCase()].rpcUrl
+        const facetsResult =
+          await $`cast call ${diamondAddress} "facets() returns ((address,bytes4[])[])" --rpc-url ${rpcUrl}`
+        const rawString = facetsResult.stdout
+
+        const jsonCompatibleString = rawString
+          .replace(/\(/g, '[')
+          .replace(/\)/g, ']')
+          .replace(/0x[0-9a-fA-F]+/g, '"$&"')
+
+        const onChainFacets = JSON.parse(jsonCompatibleString)
+
+        if (Array.isArray(onChainFacets)) {
+          // mapping on-chain facet addresses to names in config
+          const configFacetsByAddress = Object.fromEntries(
+            Object.entries(deployedContracts).map(([name, address]) => {
+              return [address.toLowerCase(), name]
+            })
+          )
+
+          const onChainFacetAddresses = onChainFacets.map(([address]) =>
+            address.toLowerCase()
+          )
+
+          const configuredFacetAddresses = Object.keys(configFacetsByAddress)
+
+          const missingInConfig = onChainFacetAddresses.filter(
+            (address) => !configFacetsByAddress[address]
+          )
+
+          const missingOnChain = configuredFacetAddresses.filter(
+            (address) => !onChainFacetAddresses.includes(address)
+          )
+
+          if (missingInConfig.length > 0) {
+            logError(
+              `The following facets exist on-chain but are missing in the config: ${JSON.stringify(
+                missingInConfig
+              )}`
+            )
+          }
+          if (missingOnChain.length > 0) {
+            logError(
+              `The following facets exist in the config but are not deployed on-chain: ${JSON.stringify(
+                missingOnChain
+              )}`
+            )
+          }
+
+          registeredFacets = onChainFacets.map(([address]) => {
+            return configFacetsByAddress[address.toLowerCase()]
+          })
+        }
+      } else {
+        throw new Error('Failed to get rpc from network config file')
+      }
     } catch (error) {
-      consola.warn(
-        'Unable to parse louper output - skipping facet registration check'
-      )
-      consola.debug('Error:', error)
+      consola.warn('Unable to parse output - skipping facet registration check')
+      consola.warn('Error:', error)
     }
 
     for (const facet of [...coreFacets, ...nonCoreFacets]) {
@@ -378,8 +390,9 @@ const main = defineCommand({
       }
 
       // Check that Diamond is owned by SAFE
-      if (globalConfig.safeAddresses[network.toLowerCase()]) {
-        const safeAddress = globalConfig.safeAddresses[network.toLowerCase()]
+      if (networksConfig[network.toLowerCase()].safeAddress) {
+        const safeAddress = networksConfig[network.toLowerCase()].safeAddress
+
         await checkOwnership(
           'LiFiDiamond',
           safeAddress,
@@ -533,6 +546,7 @@ const main = defineCommand({
       finish()
     } else {
       logError('No dexs configured')
+      finish()
     }
   },
 })
@@ -594,8 +608,10 @@ const checkIsDeployed = async (
 const finish = () => {
   if (errors.length) {
     consola.error(`${errors.length} Errors found in deployment`)
+    process.exit(1)
   } else {
     consola.success('Deployment checks passed')
+    process.exit(0)
   }
 }
 
