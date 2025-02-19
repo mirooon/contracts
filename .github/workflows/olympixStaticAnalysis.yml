@@ -30,11 +30,6 @@ jobs:
         with:
           files: |
             src/**/*.sol
-          
-      - name: Echo Changed Files Flag via Random Env Variable
-        run: |
-          RANDOM_VAR="${{ steps.changed-files.outputs.any_changed }}"
-          echo "Random env variable (changed-files flag): $RANDOM_VAR"
 
       - name: Convert Changed Files to Args
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -42,8 +37,6 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          echo "ALL_CHANGED_FILES"
-          echo $ALL_CHANGED_FILES
           args=$(echo $ALL_CHANGED_FILES | xargs -n 1 -I {} printf -- "-p %s " "{}")
           echo "ARGS=$args" >> $GITHUB_ENV
 
