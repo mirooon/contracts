@@ -15,7 +15,7 @@ on:
 
 jobs:
   check-security-alerts:
-    needs: olympix-static-analysis
+    needs: static-analysis
     runs-on: ubuntu-latest
 
     steps:
