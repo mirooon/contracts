@@ -9,6 +9,9 @@ on:
       event_name:
         description: "Optional: Event name from Hexagate"
         required: false
+      fields_to_include:
+        description: "Optional field to prevent Hexagate errors"
+        required: false
 
 jobs:
   diamond-emergency-pause:
