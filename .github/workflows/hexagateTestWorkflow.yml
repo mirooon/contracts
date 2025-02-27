@@ -6,6 +6,9 @@ on:
       Warning:
         description: "TODO: By clicking the next button you are sending test message to slack. Please proceed with extreme caution !!! You must type 'UNDERSTOOD' to proceed"
         required: true
+      event_name:
+        description: "Optional: Event name from Hexagate"
+        required: false
 
 jobs:
   diamond-emergency-pause:
