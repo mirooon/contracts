@@ -1,0 +1,29 @@
+name: Hexagate Test Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      Warning:
+        description: "TODO: By clicking the next button you are sending test message to slack. Please proceed with extreme caution !!! You must type 'UNDERSTOOD' to proceed"
+        required: true
+
+jobs:
+  diamond-emergency-pause:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Check input
+        if: ${{ inputs.Warning != 'UNDERSTOOD' }}
+        run: |
+          echo -e "\033[31mYou must type 'UNDERSTOOD' to proceed. Please try again. \033[0m"
+          exit 1
+
+      - name: Send Reminder to Slack SC-general Channel
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_SC_GENERAL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: 'TEST - hexagate test workflow executed by ${{ github.actor }}'
