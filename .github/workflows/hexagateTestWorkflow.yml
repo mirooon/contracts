@@ -1,20 +1,20 @@
 name: Hexagate Test Workflow
 
+# allows manual triggering with a required confirmation input to prevent accidental execution
+# checks if the input confirmation is correctly typed as 'UNDERSTOOD' before proceeding
+# checks out the repository to access the codebase
+# logs test echo
+
+
 on:
   workflow_dispatch:
     inputs:
       Warning:
         description: "TODO: By clicking the next button you are sending test message to slack. Please proceed with extreme caution !!! You must type 'UNDERSTOOD' to proceed"
         required: true
-      event_name:
-        description: "Optional: Event name from Hexagate"
-        required: false
-      fields_to_include:
-        description: "Optional field to prevent Hexagate errors"
-        required: false
 
 jobs:
-  diamond-emergency-pause:
+  hexagate-test-workflow:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -25,6 +25,9 @@ jobs:
         run: |
           echo -e "\033[31mYou must type 'UNDERSTOOD' to proceed. Please try again. \033[0m"
           exit 1
+
+      - name: Debug Log - Test Workflow Triggered
+        run: echo "Hexagate test workflow has been successfully triggered."
 
       - name: Send Reminder to Slack SC-general Channel
         uses: slackapi/slack-github-action@v2.0.0
