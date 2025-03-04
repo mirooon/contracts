@@ -9,7 +9,7 @@ name: Hexagate Test Workflow
 on:
   workflow_dispatch:
     inputs:
-      Warning:
+      warning: # "warning" starts with small letter because Hexagate lower case all keys
         description: "TODO: By clicking the next button you are sending test message to slack. Please proceed with extreme caution !!! You must type 'UNDERSTOOD' to proceed"
         required: true
 
