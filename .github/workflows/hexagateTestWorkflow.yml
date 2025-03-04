@@ -4,6 +4,7 @@ name: Hexagate Test Workflow
 # checks if the input confirmation is correctly typed as 'UNDERSTOOD' before proceeding
 # checks out the repository to access the codebase
 # logs test echo
+# sends test slack message
 
 
 on:
