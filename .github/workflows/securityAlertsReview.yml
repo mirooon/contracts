@@ -225,7 +225,7 @@ jobs:
               COMMENT_BODY+="🟢 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n"
               COMMENT_BODY+="   🔹 Dismiss Reason: **$CAPITALIZED_REASON**\n"
-              # COMMENT_BODY+="   🔹 Dismiss Comment: $DISMISS_COMMENT_ESCAPED\n\n"
+              COMMENT_BODY+="   🔹 Dismiss Comment: $DISMISS_COMMENT_ESCAPED\n\n"
             done < <(echo "$RESOLVED_ALERTS" | jq -c '.[]')
           fi
 
