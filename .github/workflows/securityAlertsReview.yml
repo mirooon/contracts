@@ -208,10 +208,12 @@ jobs:
               DISMISS_COMMENT=$(echo "$row" | jq -r '.dismissed_comment')
               CAPITALIZED_REASON=$(echo "$DISMISS_REASON" | sed 's/^\(.\)/\U\1/')
 
+              DISMISS_COMMENT_ESCAPED=$(jq -Rn --arg c "$DISMISS_COMMENT" '$c | @json' | sed 's/^"//; s/"$//' | sed 's/\\\//\//g')
+
               COMMENT_BODY+="🟢 [View Alert]($ALERT_URL) - **File:** \`$ALERT_FILE\`\n"
               COMMENT_BODY+="   🔹 $ALERT_DESCRIPTION\n"
               COMMENT_BODY+="   🔹 Dismiss Reason: **$CAPITALIZED_REASON**\n"
-              COMMENT_BODY+="   🔹 Dismiss Comment: $DISMISS_COMMENT\n\n"
+              COMMENT_BODY+="   🔹 Dismiss Comment: $DISMISS_COMMENT_ESCAPED\n\n"
             done < <(echo "$RESOLVED_ALERTS" | jq -c '.[]')
           fi
 
@@ -219,6 +221,9 @@ jobs:
           if [[ "$UNRESOLVED_COUNT" -eq 0 && "$DISMISSED_COUNT" -eq 0 && "$INVALID_REASON_COUNT" -eq 0 ]]; then
             COMMENT_BODY+="✅ **No unresolved security alerts!** 🎉\n\n"
           fi
+
+          echo "COMMENT_BODY"
+          echo $COMMENT_BODY
 
           # Update existing comment if found; otherwise, post a new one.
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
