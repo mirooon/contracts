@@ -237,18 +237,18 @@ jobs:
           echo "COMMENT_BODY"
           echo $COMMENT_BODY
 
-          COMMENT_BODY_JSON=$(echo "$COMMENT_BODY" | jq -Rs .)
+          JSON_PAYLOAD=$(jq -nc --arg body "$COMMENT_BODY" '{ body: $body }')
 
           # Update existing comment if found; otherwise, post a new one.
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
             echo "Updating existing comment ID: $EXISTING_COMMENT_ID"
             curl -s -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": \"$COMMENT_BODY_JSON\"}" \
+              -d "$JSON_PAYLOAD" \
               "https://api.github.com/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}"
           else
             echo "Posting new comment to PR..."
             curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
-              -d "{\"body\": \"$COMMENT_BODY_JSON\"}" \
+              -d "$JSON_PAYLOAD" \
               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           fi
 
