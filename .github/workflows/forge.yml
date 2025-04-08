@@ -45,13 +45,21 @@ jobs:
               echo "$line" >> $GITHUB_ENV
             fi
           done < .env
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+      - name: Debug
+        run: |
+          if [ -n "$ETH_NODE_URI_MAINNET" ]; then
+            echo "ETH_NODE_URI_MAINNET is set to: $ETH_NODE_URI_MAINNET"
+          else
+            echo "ETH_NODE_URI_MAINNET is not set"
+          fi
           if [ -n "$ETH_NODE_URI_GNOSIS" ]; then
             echo "ETH_NODE_URI_GNOSIS is set to: $ETH_NODE_URI_GNOSIS"
           else
             echo "ETH_NODE_URI_GNOSIS is not set"
           fi
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
           
       - name: Run forge tests (with auto-repeat in case of error)
         uses: Wandalen/wretry.action@v3.8.0
