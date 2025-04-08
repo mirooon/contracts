@@ -41,6 +41,7 @@ jobs:
           # Inject the variables from .env into the GitHub Actions environment
           while IFS= read -r line || [[ -n "$line" ]]; do
             if [[ "$line" != "" ]]; then
+              echo $line
               echo "$line" >> $GITHUB_ENV
             fi
           done < .env
