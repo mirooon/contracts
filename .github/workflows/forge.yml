@@ -44,6 +44,11 @@ jobs:
               echo "$line" >> $GITHUB_ENV
             fi
           done < .env
+          if [ -n "$ETH_NODE_URI_GNOSIS" ]; then
+            echo "ETH_NODE_URI_GNOSIS is set to: $ETH_NODE_URI_GNOSIS"
+          else
+            echo "ETH_NODE_URI_GNOSIS is not set"
+          fi
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           
