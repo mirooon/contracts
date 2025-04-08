@@ -81,7 +81,7 @@
       }
     }
   },
-  "abstract-test": {
+  "testabstracttest": {
     "production": {
       "LiFiDiamond": {
         "AccessManagerFacet": "1.0.0",
