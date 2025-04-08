@@ -5,7 +5,7 @@ import { HopFacet } from "lifi/Facets/HopFacet.sol";
 import { TestBase, ILiFi } from "../utils/TestBase.sol";
 
 contract HopGasTest is TestBase {
-    address internal constant HOP_USDC_BRIDGE =
+    address internal constant HOP_USDC_BRIDGEE =
         0x3666f603Cc164936C1b87e207F36BEBa4AC5f18a;
     address internal constant WHALE =
         0x72A53cDBBcc1b9efa39c834A540550e23463AAcB;
@@ -19,7 +19,7 @@ contract HopGasTest is TestBase {
         initTestBase();
 
         hopFacet = new HopFacet();
-        hop = IHopBridge(HOP_USDC_BRIDGE);
+        hop = IHopBridge(HOP_USDC_BRIDGEE);
 
         bytes4[] memory functionSelectors = new bytes4[](2);
         functionSelectors[0] = hopFacet.initHop.selector;
@@ -29,7 +29,7 @@ contract HopGasTest is TestBase {
         hopFacet = HopFacet(address(diamond));
 
         HopFacet.Config[] memory config = new HopFacet.Config[](1);
-        config[0] = HopFacet.Config(ADDRESS_USDC, HOP_USDC_BRIDGE);
+        config[0] = HopFacet.Config(ADDRESS_USDC, HOP_USDC_BRIDGEE);
         hopFacet.initHop(config);
 
         string[] memory tokens = new string[](1);
@@ -45,7 +45,7 @@ contract HopGasTest is TestBase {
         uint256 deadline = block.timestamp + 20 minutes;
 
         vm.startPrank(WHALE);
-        usdc.approve(HOP_USDC_BRIDGE, amount);
+        usdc.approve(HOP_USDC_BRIDGEE, amount);
         hop.sendToL2(
             137,
             WHALE,
