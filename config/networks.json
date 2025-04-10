@@ -39,6 +39,26 @@
     "isZkEVM": true,
     "create3Factory": "0x93FEC2C00BfE902F733B57c5a6CeeD7CD1384AE1"
   },
+  "testabstracttest": {
+    "name": "abstract",
+    "chainId": 2741,
+    "nativeAddress": "0x0000000000000000000000000000000000000000",
+    "nativeCurrency": "ETH",
+    "wrappedNativeAddress": "0x3439153EB7AF838Ad19d56E1571FBD09333C2809",
+    "status": "active",
+    "type": "mainnet",
+    "rpcUrl": "https://api.mainnet.abs.xyz",
+    "verificationType": "etherscan",
+    "explorerUrl": "https://abscan.org",
+    "explorerApiUrl": "https://api.abscan.org/api",
+    "multicallAddress": "0xAa4De41dba0Ca5dCBb288b7cC6b708F3aaC759E7",
+    "safeApiUrl": "https://transaction.abstract-safe.protofire.io/api",
+    "safeAddress": "0x257CBCDc7FcBA79a83149C9D7160ef15A86FA39c",
+    "safeWebUrl": "https://abstract-safe.protofire.io/home?safe=abstract:0x257CBCDc7FcBA79a83149C9D7160ef15A86FA39c",
+    "gasZipChainId": 110,
+    "isZkEVM": true,
+    "create3Factory": "0x93FEC2C00BfE902F733B57c5a6CeeD7CD1384AE1"
+  },
   "apechain": {
     "name": "Ape Chain",
     "chainId": 33139,
