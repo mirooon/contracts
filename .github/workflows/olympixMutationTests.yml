@@ -42,12 +42,15 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          IFS=$'\n' read -rd '' -a filesArray <<< "$ALL_CHANGED_FILES"
+          # Use -r (raw) and -a (array), and remove -d ''
+          IFS=$'\n' read -ra filesArray <<< "$ALL_CHANGED_FILES"
+      
+          # If more than 5 files, truncate
           if [ "${#filesArray[@]}" -gt 5 ]; then
             echo "Warning: More than 5 .sol files changed. Only using the first 5."
             filesArray=("${filesArray[@]:0:5}")
           fi
-
+      
           args=$(printf -- "-p %s " "${filesArray[@]}")
           echo "ARGS=$args" >> $GITHUB_ENV
 
