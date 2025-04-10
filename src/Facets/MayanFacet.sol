@@ -20,6 +20,7 @@ contract MayanFacet is ILiFi, ReentrancyGuard, SwapperV2, Validatable {
     bytes32 internal constant NAMESPACE = keccak256("com.lifi.facets.mayan");
     bytes32 internal constant NAMESPACE2 = keccak256("com.lifi.facets.mayan2");
     bytes32 internal constant NAMESPACE3 = keccak256("com.lifi.facets.mayan3");
+    bytes32 internal constant NAMESPACE4 = keccak256("com.lifi.facets.mayan4");
     address internal constant NON_EVM_ADDRESS =
         0x11f111f111f111F111f111f111F111f111f111F1;
 
