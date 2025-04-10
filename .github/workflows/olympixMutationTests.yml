@@ -29,12 +29,14 @@ jobs:
           files: |
             src/**/*.sol
 
-      - name: Debug changed files output
-        run: echo "Changed files flag: ${{ steps.changed-files.outputs.all_changed_files }}"
+      - name: Debug changed files (all)
+        run: |
+          echo "Changed files flag: ${{ steps.changed-files.outputs.all_changed_files }}"
 
-      - name: Debug changed files output
-        run: echo "Changed files flag: ${{ steps.changed-files.outputs.any_changed }}"
-
+      - name: Debug changed files (any)
+        run: |
+          echo "Changed files flag: ${{ steps.changed-files.outputs.any_changed }}"
+          
       - name: Convert Changed Files to Args
         if: steps.changed-files.outputs.any_changed == 'true'
         id: format-args
