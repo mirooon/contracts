@@ -1,0 +1,70 @@
+name: Mutation Test Generation Workflow
+on:
+  push
+
+jobs:
+  mutation-test-generation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run forge install
+        run: forge install
+
+      - name: Get added, renamed, modified Solidity Files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            src/**/*.sol
+          
+      - name: Convert Changed Files to Args
+        if: steps.changed-files.outputs.any_changed == 'true'
+        id: format-args
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: |
+          # Use -r (raw) and -a (array), and remove -d ''
+          IFS=$'\n' read -ra filesArray <<< "$ALL_CHANGED_FILES"
+      
+          # If more than 5 files, truncate
+          if [ "${#filesArray[@]}" -gt 5 ]; then
+            echo "Warning: More than 5 .sol files changed. Only using the first 5."
+            filesArray=("${filesArray[@]:0:5}")
+          fi
+      
+          args=$(printf -- "-p %s " "${filesArray[@]}")
+          echo "ARGS=$args" >> $GITHUB_ENV
+
+      - name: Fetch RPC endpoints from MongoDB
+        run: |
+          # Run the fetch-rpcs.ts script to update .env with RPC endpoint variables
+          # This will fetch prioritized RPCs from MongoDB, or fall back to public RPCs from networks.json if MongoDB is unavailable
+          bun fetch-rpcs
+          # Only inject RPC endpoint variables into the GitHub Actions environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ "$line" =~ ^ETH_NODE_URI_ ]]; then
+              echo "$line" >> "$GITHUB_ENV"
+            fi
+          done < ".env"
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+      - name: Mutation Test Generator
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: olympix/mutation-test-generator@main
+        env:
+          OLYMPIX_API_TOKEN: ${{ secrets.OLYMPIX_API_TOKEN }}
+          OLYMPIX_GITHUB_ACCESS_TOKEN: ${{ secrets.GH_PAT }}
+        with:
+          args: ${{ env.ARGS }}
