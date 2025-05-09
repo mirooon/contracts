@@ -64,7 +64,8 @@ jobs:
 
       - name: Echo Args
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: echo "Args being used: ${{ env.ARGS }}"
+        run: |
+          echo "Args being used: ${{ env.ARGS }}"
 
       - name: Mutation Test Generator
         if: steps.changed-files.outputs.any_changed == 'true'
