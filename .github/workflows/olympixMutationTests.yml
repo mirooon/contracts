@@ -44,6 +44,8 @@ jobs:
           fi
       
           args=$(printf -- "-p %s " "${filesArray[@]}")
+          # Add the -env option to the args
+          args="$args -env"
           echo "ARGS=$args" >> $GITHUB_ENV
 
       - name: Fetch RPC endpoints from MongoDB
@@ -58,7 +60,7 @@ jobs:
             fi
           done < ".env"
         env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_URI: ${{ secrets.FAKE_MONGODB_URI }} # FAKE_MONDGO_URI in order to get public RPCs
 
       - name: Mutation Test Generator
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -66,7 +68,9 @@ jobs:
         env:
           OLYMPIX_API_TOKEN: ${{ secrets.OLYMPIX_API_TOKEN }}
           OLYMPIX_GITHUB_ACCESS_TOKEN: ${{ secrets.GH_PAT }}
-          OLYMPIX_FAIL_MUTATION_GHA_THRESHOLD: 30  # Set threshold to 30% - adjust this value as needed
-          OLYMPIX_GITHUB_COMMIT_HEAD_SHA: ${{ github.sha }}  # Use the current commit SHA
+          OLYMPIX_FAIL_MUTATION_GHA_THRESHOLD: 30
+          OLYMPIX_GITHUB_COMMIT_HEAD_SHA: ${{ github.sha }}
+        run: |
+          echo "Args being used: ${{ env.ARGS }}"
         with:
           args: ${{ env.ARGS }}
