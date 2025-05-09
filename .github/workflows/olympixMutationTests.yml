@@ -62,6 +62,10 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.FAKE_MONGODB_URI }} # FAKE_MONDGO_URI in order to get public RPCs
 
+      - name: Echo Args
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: echo "Args being used: ${{ env.ARGS }}"
+
       - name: Mutation Test Generator
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: olympix/mutation-test-generator@main
@@ -70,7 +74,5 @@ jobs:
           OLYMPIX_GITHUB_ACCESS_TOKEN: ${{ secrets.GH_PAT }}
           OLYMPIX_FAIL_MUTATION_GHA_THRESHOLD: 40
           OLYMPIX_GITHUB_COMMIT_HEAD_SHA: ${{ github.sha }}
-        run: |
-          echo "Args being used: ${{ env.ARGS }}"
         with:
           args: ${{ env.ARGS }}
