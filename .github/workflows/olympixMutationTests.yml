@@ -45,7 +45,6 @@ jobs:
       
           args=$(printf -- "-p %s " "${filesArray[@]}")
           # Add the -env option to the args
-          args="$args -env"
           echo "ARGS=$args" >> $GITHUB_ENV
 
       - name: Fetch RPC endpoints from MongoDB
