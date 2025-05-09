@@ -68,7 +68,7 @@ jobs:
         env:
           OLYMPIX_API_TOKEN: ${{ secrets.OLYMPIX_API_TOKEN }}
           OLYMPIX_GITHUB_ACCESS_TOKEN: ${{ secrets.GH_PAT }}
-          OLYMPIX_FAIL_MUTATION_GHA_THRESHOLD: 30
+          OLYMPIX_FAIL_MUTATION_GHA_THRESHOLD: 40
           OLYMPIX_GITHUB_COMMIT_HEAD_SHA: ${{ github.sha }}
         run: |
           echo "Args being used: ${{ env.ARGS }}"
