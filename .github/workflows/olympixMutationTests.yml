@@ -59,7 +59,7 @@ jobs:
             fi
           done < ".env"
         env:
-          MONGODB_URI: ${{ secrets.FAKE_MONGODB_URI }} # FAKE_MONDGO_URI in order to get public RPCs
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
 
       - name: Echo Args
         if: steps.changed-files.outputs.any_changed == 'true'
