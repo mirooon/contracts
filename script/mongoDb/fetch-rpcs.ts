@@ -19,8 +19,10 @@ async function fetchRpcEndpoints(): Promise<{
   [network: string]: IRpcEndpoint[]
 }> {
   const MONGODB_URI = process.env.MONGODB_URI
-  if (!MONGODB_URI)
-    throw new Error('MONGODB_URI is not defined in the environment')
+  if (!MONGODB_URI) {
+    // Return empty object instead of throwing to allow fallback to networks.json
+    return {}
+  }
 
   const client = new MongoClient(MONGODB_URI)
 
@@ -35,7 +37,7 @@ async function fetchRpcEndpoints(): Promise<{
     await cursor.forEach((doc) => {
       if (doc?.chainName && Array.isArray(doc?.rpcs)) {
         const validEndpoints: IRpcEndpoint[] = doc.rpcs.filter(
-          (r: any) => !!r.url
+          (r: Partial<IRpcEndpoint>) => !!r.url
         )
         // Sort endpoints in descending order so that the endpoint with the highest priority comes first
         validEndpoints.sort((a, b) => b.priority - a.priority)
@@ -59,21 +61,45 @@ async function mergeEndpointsIntoEnv() {
   try {
     // Try to fetch from MongoDB first
     let newEndpoints: { [network: string]: IRpcEndpoint[] } = {}
+    let usingNetworksJson = false
     try {
       newEndpoints = await fetchRpcEndpoints()
+      // Check if we got any endpoints (empty object means MONGODB_URI was missing)
+      if (Object.keys(newEndpoints).length === 0) {
+        usingNetworksJson = true
+      }
     } catch (error) {
       consola.warn(
         'Failed to fetch from MongoDB, falling back to networks.json:',
         error
       )
-      // Fall back to networks.json
+      usingNetworksJson = true
+    }
+
+    // Fall back to networks.json if MongoDB was not available or failed
+    if (usingNetworksJson || Object.keys(newEndpoints).length === 0) {
+      const DRPC_API_KEY = process.env.DRPC_API_KEY
       const networks = (await import('../../config/networks.json')).default
       newEndpoints = Object.entries(networks).reduce(
         (acc, [networkName, config]) => {
           const envVar = getRPCEnvVarName(networkName)
+          let rpcUrl = config.rpcUrl
+
+          // Append API key to dRPC URLs if available
+          if (
+            DRPC_API_KEY &&
+            rpcUrl &&
+            (rpcUrl.includes('drpc.live') || rpcUrl.includes('drpc.org'))
+          ) {
+            // Ensure URL doesn't already have an API key
+            if (!rpcUrl.includes(DRPC_API_KEY)) {
+              rpcUrl = `${rpcUrl}/${DRPC_API_KEY}`
+            }
+          }
+
           acc[envVar] = [
             {
-              url: config.rpcUrl,
+              url: rpcUrl,
               priority: 1,
               isActive: true,
               network: networkName,
