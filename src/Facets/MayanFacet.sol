@@ -26,6 +26,8 @@ contract MayanFacet is
     /// Storage ///
 
     bytes32 internal constant NAMESPACE = keccak256("com.lifi.facets.mayan");
+    bytes32 internal constant NAMESPACE2 = keccak256("com.lifi.facets.mayan2");
+    bytes32 internal constant NAMESPACE3 = keccak256("com.lifi.facets.mayan3");
 
     IMayan public immutable MAYAN;
 
